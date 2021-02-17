@@ -11,7 +11,7 @@ type Dato struct {
 
 type Departamento struct {
 	Nombre  string
-	Tiendas *Lista
+	Tiendas []Tienda
 }
 
 type Tienda struct {
@@ -29,42 +29,81 @@ type Lista struct {
 	Size        int
 }
 
-func NuevaLista() *Lista {
+func NewTienda() *Tienda {
+	return &Tienda{"", "", "", 0}
+}
+
+func NewNodo() *Nodo {
+	return &Nodo{NewTienda(), nil, nil}
+}
+
+func NewLista() *Lista {
 	return &Lista{nil, nil, 0}
 }
 
+func (this *Lista) InsertarInicio(nuevo *Nodo) {
+	nuevo.Next = this.First
+	this.First.Prev = nuevo
+	this.First = nuevo
+}
+
+func (this *Lista) InsertarFinal(nuevo *Nodo) {
+	this.Last.Next = nuevo
+	nuevo.Prev = this.Last
+	this.Last = nuevo
+}
+
+func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
+	nuevo.Next = aux
+	nuevo.Prev = aux.Prev
+	aux.Prev.Next = nuevo
+	aux.Prev = nuevo
+}
+
 func (this *Lista) Insertar(nuevo *Nodo) {
-	if this.First == nil {
+	this.Size++
+	runes1 := []rune(nuevo.Tienda.Nombre)
+	ascii1 := 0
+	for i := 0; i < len(runes1); i++ {
+		ascii1 += int(runes1[i])
+	}
+	if this.Size-1 == 0 {
 		this.First = nuevo
 		this.Last = nuevo
-	} else {
-		this.Last.Next = nuevo
-		nuevo.Prev = this.Last
-		this.Last = nuevo
+		return
 	}
-}
-
-/*func (this *Lista) ToString() string {
-	var texto string
-	aux := this.first
-	for aux != nil {
-		texto += aux.ToString()
+	runes2 := []rune(this.First.Tienda.Nombre)
+	ascii2 := 0
+	for i := 0; i < len(runes2); i++ {
+		ascii2 += int(runes2[i])
+	}
+	if this.Size-1 == 1 {
+		if ascii1 < ascii2 {
+			this.InsertarInicio(nuevo)
+			return
+		}
+		this.InsertarFinal(nuevo)
+		return
+	}
+	var aux *Nodo = this.First
+	for i := 0; i < this.Size-1; i++ {
+		ascii2 = 0
+		runes2 := []rune(aux.Tienda.Nombre)
+		for j := 0; j < len(runes2); j++ {
+			ascii2 += int(runes2[j])
+		}
+		if ascii1 < ascii2 {
+			if i == 0 {
+				this.InsertarInicio(nuevo)
+				return
+			}
+			this.InsertarEntre(nuevo, aux)
+			return
+		}
+		if i == this.Size-2 {
+			this.InsertarFinal(nuevo)
+			return
+		}
 		aux = aux.Next
 	}
-	return texto
 }
-
-func (this *Nodo) ToString() string {
-	var texto string
-	texto = "Origen: " + this.Info.Origen + "\n" +
-		"Destino: " + this.Info.Destino + "\n" + "Mensajes:\n"
-	for i := 0; i < len(this.Info.Msgs); i++ {
-		texto += "[" + this.Info.Msgs[i].Fecha + "] " + this.Info.Msgs[i].Texto + "\n\n"
-	}
-	return texto
-}
-
-func (this *Lista) Print() {
-	fmt.Println("---LISTA DE MENSAJES---\n")
-	this.ToString()
-}*/
