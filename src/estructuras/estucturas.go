@@ -1,5 +1,13 @@
 package estructuras
 
+import "fmt"
+
+type RequestFind struct {
+	Departamento string `json:Departamento`
+	Nombre       string `json:Nombre`
+	Calificacion int    `json:Calificacion`
+}
+
 type Archivo struct {
 	Datos []*Dato
 }
@@ -15,8 +23,10 @@ type Departamento struct {
 }
 
 type Tienda struct {
-	Nombre, Descripcion, Contacto string
-	Calificacion                  int
+	Nombre       string `json:Nombre`
+	Descripcion  string `json:Descripcion`
+	Contacto     string `json:Contacto`
+	Calificacion int    `json:Calificacion`
 }
 
 type Nodo struct {
@@ -39,6 +49,22 @@ func NewNodo(tienda *Tienda) *Nodo {
 
 func NewLista() *Lista {
 	return &Lista{nil, nil, 0}
+}
+
+func (this *Lista) Buscar(tienda string) *Tienda {
+	if this.Size == 0 {
+		return nil
+	} else {
+		aux := this.First
+		for i := 0; i < this.Size; i++ {
+			if aux.Tienda.Nombre == tienda {
+				fmt.Println(aux.Tienda)
+				return aux.Tienda
+			}
+			aux = aux.Next
+		}
+		return nil
+	}
 }
 
 func (this *Lista) InsertarInicio(nuevo *Nodo) {
@@ -106,4 +132,14 @@ func (this *Lista) Insertar(nuevo *Nodo) {
 		}
 		aux = aux.Next
 	}
+}
+
+func (this *Lista) ToString() string {
+	var cadena string
+	aux := this.First
+	for i := 0; i < this.Size; i++ {
+		cadena += aux.Tienda.Nombre + "\n"
+		aux = aux.Next
+	}
+	return cadena
 }
