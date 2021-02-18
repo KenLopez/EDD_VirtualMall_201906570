@@ -1,17 +1,17 @@
 package estructuras
 
 type Archivo struct {
-	Datos []Dato
+	Datos []*Dato
 }
 
 type Dato struct {
 	Indice        string
-	Departamentos []Departamento
+	Departamentos []*Departamento
 }
 
 type Departamento struct {
 	Nombre  string
-	Tiendas []Tienda
+	Tiendas []*Tienda
 }
 
 type Tienda struct {
@@ -33,8 +33,8 @@ func NewTienda() *Tienda {
 	return &Tienda{"", "", "", 0}
 }
 
-func NewNodo() *Nodo {
-	return &Nodo{NewTienda(), nil, nil}
+func NewNodo(tienda *Tienda) *Nodo {
+	return &Nodo{tienda, nil, nil}
 }
 
 func NewLista() *Lista {
