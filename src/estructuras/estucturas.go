@@ -1,6 +1,10 @@
 package estructuras
 
-import "fmt"
+type DeleteReq struct {
+	Nombre       string `json:Nombre`
+	Categoria    string `json:Categoria`
+	Calificacion int    `json:Calificacion`
+}
 
 type RequestFind struct {
 	Departamento string `json:Departamento`
@@ -9,17 +13,17 @@ type RequestFind struct {
 }
 
 type Archivo struct {
-	Datos []*Dato
+	Datos []*Dato `json:Datos`
 }
 
 type Dato struct {
-	Indice        string
-	Departamentos []*Departamento
+	Indice        string          `json:Indice`
+	Departamentos []*Departamento `json:Departamentos`
 }
 
 type Departamento struct {
-	Nombre  string
-	Tiendas []*Tienda
+	Nombre  string    `json:Nombre`
+	Tiendas []*Tienda `json:Tiendas`
 }
 
 type Tienda struct {
@@ -58,8 +62,44 @@ func (this *Lista) Buscar(tienda string) *Tienda {
 		aux := this.First
 		for i := 0; i < this.Size; i++ {
 			if aux.Tienda.Nombre == tienda {
-				fmt.Println(aux.Tienda)
 				return aux.Tienda
+			}
+			aux = aux.Next
+		}
+		return nil
+	}
+}
+
+func (this *Lista) Eliminar(tienda string) *Tienda {
+	if this.Size == 0 {
+		return nil
+	} else {
+		aux := this.First
+		for i := 0; i < this.Size; i++ {
+			if aux.Tienda.Nombre == tienda {
+				if i == 0 {
+					if this.Size == 1 {
+						this.First = nil
+						this.Last = nil
+						this.Size--
+						return aux.Tienda
+					} else {
+						this.First.Next.Prev = nil
+						this.First = this.First.Next
+						this.Size--
+						return aux.Tienda
+					}
+				} else if i == this.Size-1 {
+					aux.Prev.Next = nil
+					this.Last = aux.Prev
+					this.Size--
+					return aux.Tienda
+				} else {
+					aux.Prev.Next = aux.Next
+					aux.Next.Prev = aux.Prev
+					this.Size--
+					return aux.Tienda
+				}
 			}
 			aux = aux.Next
 		}
@@ -142,4 +182,16 @@ func (this *Lista) ToString() string {
 		aux = aux.Next
 	}
 	return cadena
+}
+
+func (this *Lista) ToArray() *[]*Tienda {
+	var array []*Tienda
+	if this.Size != 0 {
+		var aux *Nodo = this.First
+		for i := 0; i < this.Size; i++ {
+			array = append(array, aux.Tienda)
+			aux = aux.Next
+		}
+	}
+	return &array
 }
