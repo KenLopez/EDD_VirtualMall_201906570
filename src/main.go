@@ -164,6 +164,9 @@ func guardar(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		jsonData, _ := json.MarshalIndent(file, "", "	")
+		_ = ioutil.WriteFile("Datos.json", jsonData, 0644)
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(file)
 	}
