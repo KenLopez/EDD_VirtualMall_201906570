@@ -126,6 +126,15 @@ func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
 	aux.Prev = nuevo
 }
 
+func (this *Tienda) GetAscii() int {
+	var ascii int
+	runes := []rune(this.Nombre)
+	for i := 0; i < len(runes); i++ {
+		ascii += int(runes[i])
+	}
+	return ascii
+}
+
 func (this *Lista) Insertar(nuevo *Nodo) {
 	this.Size++
 	runes1 := []rune(nuevo.Tienda.Nombre)

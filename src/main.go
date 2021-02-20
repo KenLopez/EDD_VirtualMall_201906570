@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 
 	"./estructuras"
@@ -172,6 +174,76 @@ func guardar(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getArreglo(w http.ResponseWriter, r *http.Request) {
+	var listas, posiciones, conexionesV, conexionesL string
+	var countPos, countFila, countColumna, countList, numCluster int
+	posiciones = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
+		"style=invis;\nedge[minlen=0.1, dir=fordware]\n"
+	listas = ""
+	countColumna = 0
+	numCluster = 1
+	for i := 0; i < len(vectorDatos)-1; i++ {
+		conexionesV += "struct" + strconv.Itoa(i) + "->struct" + strconv.Itoa(i+1) +
+			"[arrowhead=box, color=\"#9100d4\"];\n"
+	}
+	conexionesV += "}\n"
+	for countPos < len(vectorDatos) {
+		if countPos == 5*len(indices)+5*len(indices)*countColumna {
+			countColumna++
+		}
+		var calificacion int = 0
+		countFila = 0
+		for i := 0; i < 10; i++ {
+			if countPos == len(vectorDatos)-5 {
+				break
+			}
+			calificacion++
+			if i == 5 {
+				countFila++
+				calificacion = 1
+			}
+			posiciones += "struct" + strconv.Itoa(countPos+i) + "[shape=Mrecord,color" +
+				"=blue, label=\"" + indices[countFila] + "|" + nombresDep[countColumna] +
+				"|{Pos: " + strconv.Itoa(countPos+i) + "|Calif.: " + strconv.Itoa(calificacion) +
+				"*}\"];\n"
+			if vectorDatos[countPos+i].Size > 0 {
+				var aux *estructuras.Nodo = vectorDatos[countPos+i].First
+				conexionesL += "struct" + strconv.Itoa(countPos+i) + "->nodo" + strconv.Itoa(countList) +
+					"[arrowhead=dot, color=\"#b8002b\"];\n"
+				listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
+				for j := 0; j < vectorDatos[countPos+i].Size; j++ {
+					listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
+						"\"#00bf0d\",label=\"{{" + strconv.Itoa(aux.Tienda.GetAscii()) + "|" +
+						aux.Tienda.Nombre + "}|" + aux.Tienda.Contacto + "}\"];\n"
+					if j != vectorDatos[countPos+i].Size-1 {
+						aux = aux.Next
+					}
+
+					if j >= 1 {
+						conexionesL += "nodo" + strconv.Itoa(countList-1) + "->" +
+							"nodo" + strconv.Itoa(countList) + "[arrowhead=rvee, color=orange];\n" +
+							"nodo" + strconv.Itoa(countList) + "->" +
+							"nodo" + strconv.Itoa(countList-1) + "[arrowhead=rvee, color=yellow];\n"
+					}
+					countList++
+				}
+				numCluster++
+				listas += "}\n"
+			}
+		}
+		countPos += 10
+	}
+	conexionesL += "}"
+	data := []byte(posiciones + conexionesV + listas + conexionesL)
+	_ = ioutil.WriteFile("Grafica.dot", data, 0644)
+	path, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path, "-Tpdf", "Grafica.dot").Output()
+	_ = ioutil.WriteFile("Grafica.pdf", cmd, os.FileMode(0777))
+
+	fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+
+}
+
 func linealizar(ms *estructuras.Archivo) {
 	var vector []*estructuras.Lista
 	var letras []string
@@ -216,5 +288,6 @@ func main() {
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
 	router.HandleFunc("/guardar", guardar).Methods("GET")
+	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
 	log.Fatal(http.ListenAndServe(":3000", router))
 }
