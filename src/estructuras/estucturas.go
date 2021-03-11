@@ -128,30 +128,21 @@ func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
 
 func (this *Tienda) GetAscii() int {
 	var ascii int
-	runes := []rune(this.Nombre)
-	for i := 0; i < len(runes); i++ {
-		ascii += int(runes[i])
+	for i := 0; i < len(this.Nombre); i++ {
+		ascii += int(this.Nombre[i])
 	}
 	return ascii
 }
 
 func (this *Lista) Insertar(nuevo *Nodo) {
 	this.Size++
-	runes1 := []rune(nuevo.Tienda.Nombre)
-	ascii1 := 0
-	for i := 0; i < len(runes1); i++ {
-		ascii1 += int(runes1[i])
-	}
+	ascii1 := nuevo.Tienda.GetAscii()
 	if this.Size-1 == 0 {
 		this.First = nuevo
 		this.Last = nuevo
 		return
 	}
-	runes2 := []rune(this.First.Tienda.Nombre)
-	ascii2 := 0
-	for i := 0; i < len(runes2); i++ {
-		ascii2 += int(runes2[i])
-	}
+	ascii2 := this.First.Tienda.GetAscii()
 	if this.Size-1 == 1 {
 		if ascii1 < ascii2 {
 			this.InsertarInicio(nuevo)
