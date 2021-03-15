@@ -33,6 +33,31 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Datos_Guardados")
 }
 
+func cargarInventarios(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoInventario
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_ :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	for i := 0; i < len(ms.Inventarios); i++ {
+		nodo := buscarPosicion(&estructuras.RequestFind{
+			Departamento: ms.Inventarios[i].Departamento,
+			Nombre:       ms.Inventarios[i].Tienda,
+			Calificacion: ms.Inventarios[i].Calificacion,
+		})
+		if nodo == nil {
+			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Inventarios[i].Tienda+"-;")
+		} else {
+			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
+				nodo.Inventario.Insertar(ms.Inventarios[i].Productos[j])
+			}
+			fmt.Fprintln(w, "Productos_Cargados")
+		}
+	}
+}
+
 func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	var busqueda *estructuras.RequestFind
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -41,15 +66,16 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var tienda *estructuras.Tienda = buscarPosicion(busqueda)
-	if tienda == nil {
+	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 	} else {
+		var tienda *estructuras.Tienda = nodo.Tienda
 		json.NewEncoder(w).Encode(tienda)
 	}
 }
 
-func buscarPosicion(request *estructuras.RequestFind) *estructuras.Tienda {
+func buscarPosicion(request *estructuras.RequestFind) *estructuras.Nodo {
 	indice := string(request.Nombre[0])
 	var fila, columna int
 	for i := 0; i < len(indices); i++ {
@@ -69,6 +95,10 @@ func buscarPosicion(request *estructuras.RequestFind) *estructuras.Tienda {
 		if j == len(nombresDep)-1 {
 			return nil
 		}
+	}
+	pos := calcularPos(fila, columna, request.Calificacion)
+	if pos >= len(vectorDatos) {
+		return nil
 	}
 	return vectorDatos[calcularPos(fila, columna, request.Calificacion)].Buscar(request.Nombre)
 }
@@ -213,7 +243,7 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 				listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
 				for j := 0; j < vectorDatos[countPos+i].Size; j++ {
 					listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
-						"\"#00bf0d\",label=\"{{" + strconv.Itoa(aux.Tienda.GetAscii()) + "|" +
+						"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.Tienda.Nombre)) + "|" +
 						aux.Tienda.Nombre + "}|" + aux.Tienda.Contacto + "}\"];\n"
 					if j != vectorDatos[countPos+i].Size-1 {
 						aux = aux.Next
@@ -284,6 +314,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
+	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("POST")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")

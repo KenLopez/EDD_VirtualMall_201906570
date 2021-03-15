@@ -3,6 +3,7 @@ package estructuras
 type Nodo struct {
 	Tienda     *Tienda
 	Next, Prev *Nodo
+	Inventario *Arbol
 }
 
 type Lista struct {
@@ -15,17 +16,17 @@ func NewLista() *Lista {
 }
 
 func NewNodo(tienda *Tienda) *Nodo {
-	return &Nodo{tienda, nil, nil}
+	return &Nodo{tienda, nil, nil, NewArbol()}
 }
 
-func (this *Lista) Buscar(tienda string) *Tienda {
+func (this *Lista) Buscar(tienda string) *Nodo {
 	if this.Size == 0 {
 		return nil
 	} else {
 		aux := this.First
 		for i := 0; i < this.Size; i++ {
 			if aux.Tienda.Nombre == tienda {
-				return aux.Tienda
+				return aux
 			}
 			aux = aux.Next
 		}
@@ -91,13 +92,13 @@ func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
 
 func (this *Lista) Insertar(nuevo *Nodo) {
 	this.Size++
-	ascii1 := nuevo.Tienda.GetAscii()
+	ascii1 := GetAscii(nuevo.Tienda.Nombre)
 	if this.Size-1 == 0 {
 		this.First = nuevo
 		this.Last = nuevo
 		return
 	}
-	ascii2 := this.First.Tienda.GetAscii()
+	ascii2 := GetAscii(this.First.Tienda.Nombre)
 	if this.Size-1 == 1 {
 		if ascii1 < ascii2 {
 			this.InsertarInicio(nuevo)
