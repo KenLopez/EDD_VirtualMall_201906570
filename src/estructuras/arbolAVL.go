@@ -1,21 +1,29 @@
 package estructuras
 
+import (
+	"fmt"
+	"reflect"
+	"strconv"
+)
+
 type NodoArbol struct {
-	izq, der *NodoArbol
-	peso     int
-	producto *Producto
+	Izq, Der  *NodoArbol
+	Peso      int
+	Dato      int
+	Contenido interface{}
 }
 
 type Arbol struct {
 	raiz *NodoArbol
 }
 
-func NewNodoArbol(producto *Producto) *NodoArbol {
+func NewNodoArbol(contenido interface{}, dato int) *NodoArbol {
 	return &NodoArbol{
-		izq:      nil,
-		der:      nil,
-		peso:     0,
-		producto: producto,
+		Izq:       nil,
+		Der:       nil,
+		Peso:      0,
+		Dato:      dato,
+		Contenido: contenido,
 	}
 }
 
@@ -26,94 +34,94 @@ func NewArbol() *Arbol {
 }
 
 func rotarII(n *NodoArbol) *NodoArbol {
-	n1 := n.izq
-	n.izq = n1.der
-	n1.der = n
-	if n1.peso == -1 {
-		n.peso = 0
-		n1.peso = 0
+	n1 := n.Izq
+	n.Izq = n1.Der
+	n1.Der = n
+	if n1.Peso == -1 {
+		n.Peso = 0
+		n1.Peso = 0
 	} else {
-		n.peso = -1
-		n1.peso = 1
+		n.Peso = -1
+		n1.Peso = 1
 	}
 	return n1
 }
 
 func rotarDD(n *NodoArbol) *NodoArbol {
-	n1 := n.der
-	n.der = n1.izq
-	n1.izq = n
-	if n1.peso == 1 {
-		n.peso = 0
-		n1.peso = 0
+	n1 := n.Der
+	n.Der = n1.Izq
+	n1.Izq = n
+	if n1.Peso == 1 {
+		n.Peso = 0
+		n1.Peso = 0
 	} else {
-		n.peso = 1
-		n1.peso = -1
+		n.Peso = 1
+		n1.Peso = -1
 	}
 	return n1
 }
 
 func rotarDI(n *NodoArbol) *NodoArbol {
-	n1 := n.der
-	n2 := n1.izq
-	n2.izq = n
-	n1.izq = n2.der
-	n2.der = n1
-	if n2.peso == 1 {
-		n.peso = -1
+	n1 := n.Der
+	n2 := n1.Izq
+	n2.Izq = n
+	n1.Izq = n2.Der
+	n2.Der = n1
+	if n2.Peso == 1 {
+		n.Peso = -1
 	} else {
-		n.peso = 0
+		n.Peso = 0
 	}
-	if n2.peso == -1 {
-		n1.peso = 1
+	if n2.Peso == -1 {
+		n1.Peso = 1
 	} else {
-		n1.peso = 0
+		n1.Peso = 0
 	}
-	n2.peso = 0
+	n2.Peso = 0
 	return n2
 }
 
 func rotarID(n *NodoArbol) *NodoArbol {
-	n1 := n.izq
-	n2 := n1.der
-	n1.izq = n2.der
-	n2.der = n
-	n1.der = n2.izq
-	n2.izq = n1
-	if n2.peso == 1 {
-		n.peso = -1
+	n1 := n.Izq
+	n2 := n1.Der
+	n1.Izq = n2.Der
+	n2.Der = n
+	n1.Der = n2.Izq
+	n2.Izq = n1
+	if n2.Peso == 1 {
+		n.Peso = -1
 	} else {
-		n.peso = 0
+		n.Peso = 0
 	}
-	if n2.peso == -1 {
-		n1.peso = 1
+	if n2.Peso == -1 {
+		n1.Peso = 1
 	} else {
-		n1.peso = 0
+		n1.Peso = 0
 	}
-	n2.peso = 0
+	n2.Peso = 0
 	return n2
 }
 
-func Insertar(raiz *NodoArbol, dato *Producto, hc *bool) *NodoArbol {
+func insertar(raiz *NodoArbol, dato int, contenido interface{}, hc *bool) *NodoArbol {
 	var n1 *NodoArbol
 	if raiz == nil {
-		raiz = NewNodoArbol(dato)
+		raiz = NewNodoArbol(contenido, dato)
 		*hc = true
-	} else if dato.Codigo < raiz.producto.Codigo {
-		izq := Insertar(raiz.izq, dato, hc)
-		raiz.izq = izq
+	} else if dato < raiz.Dato {
+		izq := insertar(raiz.Izq, dato, contenido, hc)
+		raiz.Izq = izq
 		if *hc {
-			switch raiz.peso {
+			switch raiz.Peso {
 			case 1:
-				raiz.peso = 0
+				raiz.Peso = 0
 				*hc = false
 				break
 			case 0:
-				raiz.peso = -1
+				raiz.Peso = -1
 				break
 			case -1:
-				n1 = raiz.izq
-				if n1.peso == -1 {
+				n1 = raiz.Izq
+				if n1.Peso == -1 {
 					raiz = rotarII(raiz)
 				} else {
 					raiz = rotarID(raiz)
@@ -121,14 +129,14 @@ func Insertar(raiz *NodoArbol, dato *Producto, hc *bool) *NodoArbol {
 				*hc = false
 			}
 		}
-	} else if dato.Codigo > raiz.producto.Codigo {
-		der := Insertar(raiz.der, dato, hc)
-		raiz.der = der
+	} else if dato > raiz.Dato {
+		der := insertar(raiz.Der, dato, contenido, hc)
+		raiz.Der = der
 		if *hc {
-			switch raiz.peso {
+			switch raiz.Peso {
 			case 1:
-				n1 := raiz.der
-				if n1.peso == 1 {
+				n1 := raiz.Der
+				if n1.Peso == 1 {
 					raiz = rotarDD(raiz)
 				} else {
 					raiz = rotarDI(raiz)
@@ -136,10 +144,10 @@ func Insertar(raiz *NodoArbol, dato *Producto, hc *bool) *NodoArbol {
 				*hc = false
 				break
 			case 0:
-				raiz.peso = 1
+				raiz.Peso = 1
 				break
 			case -1:
-				raiz.peso = 0
+				raiz.Peso = 0
 				*hc = false
 				break
 			}
@@ -148,7 +156,33 @@ func Insertar(raiz *NodoArbol, dato *Producto, hc *bool) *NodoArbol {
 	return raiz
 }
 
-func (arbol *Arbol) Insertar(dato *Producto) {
+func (arbol *Arbol) Insertar(contenido interface{}, dato int) {
 	b := false
-	arbol.raiz = Insertar(arbol.raiz, dato, &b)
+	nodo := arbol.Buscar(dato)
+	if nodo == nil {
+		arbol.raiz = insertar(arbol.raiz, dato, contenido, &b)
+	} else {
+		if reflect.TypeOf(nodo.Contenido).String() == "*estructuras.Producto" {
+			//nodo.contenido.(*Producto).Cantidad += contenido.(*Producto).Cantidad
+			fmt.Println(nodo.Contenido.(*Producto).Nombre + ": " + strconv.Itoa(nodo.Contenido.(*Producto).Cantidad))
+		}
+	}
+
+}
+
+func (arbol *Arbol) Buscar(dato int) *NodoArbol {
+	if arbol.raiz == nil {
+		return nil
+	}
+	return buscar(arbol.raiz, dato)
+}
+
+func buscar(nodo *NodoArbol, dato int) *NodoArbol {
+	if nodo == nil || nodo.Dato == dato {
+		return nodo
+	}
+	if dato < nodo.Dato {
+		return buscar(nodo.Izq, dato)
+	}
+	return buscar(nodo.Der, dato)
 }

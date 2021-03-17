@@ -4,6 +4,20 @@ type ArchivoInventario struct {
 	Inventarios []*Inventario `json:Inventarios`
 }
 
+type ArchivoPedido struct {
+	Pedidos []*Pedido `json:Pedidos`
+}
+
+type Pedido struct {
+	Fecha        string `json:Fecha`
+	Tienda       string `json:Tienda`
+	Departamento string `json:Departamento`
+	Calificacion int    `json:Calificacion`
+	Productos    []*struct {
+		Codigo string `json:Codigo`
+	} `json:Productos`
+}
+
 type Inventario struct {
 	Tienda       string      `json:Tienda`
 	Departamento string      `json:Departamento`

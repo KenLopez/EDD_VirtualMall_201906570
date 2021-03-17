@@ -1,8 +1,14 @@
 package estructuras
 
+import "reflect"
+
 type Nodo struct {
-	Tienda     *Tienda
+	Contenido  interface{}
 	Next, Prev *Nodo
+}
+
+type NodoTienda struct {
+	Tienda     *Tienda
 	Inventario *Arbol
 }
 
@@ -15,18 +21,24 @@ func NewLista() *Lista {
 	return &Lista{nil, nil, 0}
 }
 
-func NewNodo(tienda *Tienda) *Nodo {
-	return &Nodo{tienda, nil, nil, NewArbol()}
+func NewNodoTienda(tienda *Tienda) *NodoTienda {
+	return &NodoTienda{tienda, nil}
 }
 
-func (this *Lista) Buscar(tienda string) *Nodo {
+func NewNodo(contenido interface{}) *Nodo {
+	return &Nodo{contenido, nil, nil}
+}
+
+func (this *Lista) Buscar(dato string) *Nodo {
 	if this.Size == 0 {
 		return nil
 	} else {
 		aux := this.First
 		for i := 0; i < this.Size; i++ {
-			if aux.Tienda.Nombre == tienda {
-				return aux
+			if reflect.TypeOf(aux.Contenido).String() == "*estructuras.NodoTienda" {
+				if aux.Contenido.(*NodoTienda).Tienda.Nombre == dato {
+					return aux
+				}
 			}
 			aux = aux.Next
 		}
@@ -34,35 +46,37 @@ func (this *Lista) Buscar(tienda string) *Nodo {
 	}
 }
 
-func (this *Lista) Eliminar(tienda string) *Tienda {
+func (this *Lista) Eliminar(dato string) *Tienda {
 	if this.Size == 0 {
 		return nil
 	} else {
 		aux := this.First
 		for i := 0; i < this.Size; i++ {
-			if aux.Tienda.Nombre == tienda {
-				if i == 0 {
-					if this.Size == 1 {
-						this.First = nil
-						this.Last = nil
+			if reflect.TypeOf(aux.Contenido).String() == "*estructuras.NodoTienda" {
+				if aux.Contenido.(*NodoTienda).Tienda.Nombre == dato {
+					if i == 0 {
+						if this.Size == 1 {
+							this.First = nil
+							this.Last = nil
+							this.Size--
+							return aux.Contenido.(*NodoTienda).Tienda
+						} else {
+							this.First.Next.Prev = nil
+							this.First = this.First.Next
+							this.Size--
+							return aux.Contenido.(*NodoTienda).Tienda
+						}
+					} else if i == this.Size-1 {
+						aux.Prev.Next = nil
+						this.Last = aux.Prev
 						this.Size--
-						return aux.Tienda
+						return aux.Contenido.(*NodoTienda).Tienda
 					} else {
-						this.First.Next.Prev = nil
-						this.First = this.First.Next
+						aux.Prev.Next = aux.Next
+						aux.Next.Prev = aux.Prev
 						this.Size--
-						return aux.Tienda
+						return aux.Contenido.(*NodoTienda).Tienda
 					}
-				} else if i == this.Size-1 {
-					aux.Prev.Next = nil
-					this.Last = aux.Prev
-					this.Size--
-					return aux.Tienda
-				} else {
-					aux.Prev.Next = aux.Next
-					aux.Next.Prev = aux.Prev
-					this.Size--
-					return aux.Tienda
 				}
 			}
 			aux = aux.Next
@@ -90,15 +104,22 @@ func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
 	aux.Prev = nuevo
 }
 
+func (this *Nodo) GetDatoString() string {
+	if reflect.TypeOf(this.Contenido).String() == "*estructuras.NodoTienda" {
+		return this.Contenido.(*NodoTienda).Tienda.Nombre
+	}
+	return ""
+}
+
 func (this *Lista) Insertar(nuevo *Nodo) {
 	this.Size++
-	ascii1 := GetAscii(nuevo.Tienda.Nombre)
+	ascii1 := GetAscii(nuevo.GetDatoString())
 	if this.Size-1 == 0 {
 		this.First = nuevo
 		this.Last = nuevo
 		return
 	}
-	ascii2 := GetAscii(this.First.Tienda.Nombre)
+	ascii2 := GetAscii(this.First.GetDatoString())
 	if this.Size-1 == 1 {
 		if ascii1 < ascii2 {
 			this.InsertarInicio(nuevo)
@@ -109,11 +130,7 @@ func (this *Lista) Insertar(nuevo *Nodo) {
 	}
 	var aux *Nodo = this.First
 	for i := 0; i < this.Size-1; i++ {
-		ascii2 = 0
-		runes2 := []rune(aux.Tienda.Nombre)
-		for j := 0; j < len(runes2); j++ {
-			ascii2 += int(runes2[j])
-		}
+		ascii2 = GetAscii(aux.GetDatoString())
 		if ascii1 < ascii2 {
 			if i == 0 {
 				this.InsertarInicio(nuevo)
@@ -134,7 +151,9 @@ func (this *Lista) ToString() string {
 	var cadena string
 	aux := this.First
 	for i := 0; i < this.Size; i++ {
-		cadena += aux.Tienda.Nombre + "\n"
+		if reflect.TypeOf(aux.Contenido).String() == "*estructuras.NodoTienda" {
+			cadena += aux.Contenido.(*NodoTienda).Tienda.Nombre + "\n"
+		}
 		aux = aux.Next
 	}
 	return cadena
@@ -145,7 +164,7 @@ func (this *Lista) ToArray() *[]*Tienda {
 	if this.Size != 0 {
 		var aux *Nodo = this.First
 		for i := 0; i < this.Size; i++ {
-			array = append(array, aux.Tienda)
+			array = append(array, aux.Contenido.(*NodoTienda).Tienda)
 			aux = aux.Next
 		}
 	}

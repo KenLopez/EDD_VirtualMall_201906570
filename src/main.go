@@ -33,6 +33,35 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Datos_Guardados")
 }
 
+/*func cargarPedidos(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoPedido
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_ :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	for i := 0; i < len(ms.Pedidos); i++ {
+		nodo := buscarPosicion(&estructuras.RequestFind{
+			Departamento: ms.Inventarios[i].Departamento,
+			Nombre:       ms.Inventarios[i].Tienda,
+			Calificacion: ms.Inventarios[i].Calificacion,
+		})
+		if nodo == nil {
+			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Inventarios[i].Tienda+"-;")
+		} else {
+			if nodo.Inventario == nil {
+				nodo.Inventario = estructuras.NewArbol()
+			}
+			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
+				//fmt.Println(ms.Inventarios[i].Productos[j].Nombre)
+				nodo.Inventario.Insertar(ms.Inventarios[i].Productos[j], ms.Inventarios[i].Productos[j].Codigo)
+			}
+		}
+	}
+	fmt.Fprintln(w, "Productos_Cargados")
+}*/
+
 func cargarInventarios(w http.ResponseWriter, r *http.Request) {
 	var ms *estructuras.ArchivoInventario
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -50,12 +79,16 @@ func cargarInventarios(w http.ResponseWriter, r *http.Request) {
 		if nodo == nil {
 			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Inventarios[i].Tienda+"-;")
 		} else {
-			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
-				nodo.Inventario.Insertar(ms.Inventarios[i].Productos[j])
+			if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
+				nodo.Contenido.(*estructuras.NodoTienda).Inventario = estructuras.NewArbol()
 			}
-			fmt.Fprintln(w, "Productos_Cargados")
+			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
+				//fmt.Println(ms.Inventarios[i].Productos[j].Nombre)
+				nodo.Contenido.(*estructuras.NodoTienda).Inventario.Insertar(ms.Inventarios[i].Productos[j], ms.Inventarios[i].Productos[j].Codigo)
+			}
 		}
 	}
+	fmt.Fprintln(w, "Productos_Cargados")
 }
 
 func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
@@ -70,7 +103,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 	} else {
-		var tienda *estructuras.Tienda = nodo.Tienda
+		var tienda *estructuras.Tienda = nodo.Contenido.(*estructuras.NodoTienda).Tienda
 		json.NewEncoder(w).Encode(tienda)
 	}
 }
@@ -124,7 +157,7 @@ func id(w http.ResponseWriter, r *http.Request) {
 		var lista []*estructuras.Tienda
 		var aux *estructuras.Nodo = vectorDatos[numero].First
 		for i := 0; i < vectorDatos[numero].Size; i++ {
-			lista = append(lista, aux.Tienda)
+			lista = append(lista, aux.Contenido.(*estructuras.NodoTienda).Tienda)
 			aux = aux.Next
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -243,8 +276,8 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 				listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
 				for j := 0; j < vectorDatos[countPos+i].Size; j++ {
 					listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
-						"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.Tienda.Nombre)) + "|" +
-						aux.Tienda.Nombre + "}|" + aux.Tienda.Contacto + "}\"];\n"
+						"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.GetDatoString())) + "|" +
+						aux.Contenido.(*estructuras.NodoTienda).Tienda.Nombre + "}|" + aux.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion + "}\"];\n"
 					if j != vectorDatos[countPos+i].Size-1 {
 						aux = aux.Next
 					}
@@ -292,7 +325,7 @@ func linealizar(ms *estructuras.Archivo) {
 				vector = append(vector, estructuras.NewLista())
 			}
 			for k := 0; k < len(ms.Datos[j].Departamentos[i].Tiendas); k++ {
-				var nodo *estructuras.Nodo = estructuras.NewNodo(ms.Datos[j].Departamentos[i].Tiendas[k])
+				var nodo *estructuras.Nodo = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
 				if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 1 {
 					vector[len(vector)-5].Insertar(nodo)
 				} else if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 2 {
@@ -314,6 +347,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
+	//router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("POST")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
