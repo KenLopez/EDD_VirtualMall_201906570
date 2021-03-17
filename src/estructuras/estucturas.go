@@ -14,7 +14,7 @@ type Pedido struct {
 	Departamento string `json:Departamento`
 	Calificacion int    `json:Calificacion`
 	Productos    []*struct {
-		Codigo string `json:Codigo`
+		Codigo int `json:Codigo`
 	} `json:Productos`
 }
 

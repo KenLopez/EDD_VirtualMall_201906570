@@ -33,7 +33,7 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Datos_Guardados")
 }
 
-/*func cargarPedidos(w http.ResponseWriter, r *http.Request) {
+func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 	var ms *estructuras.ArchivoPedido
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -43,24 +43,28 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &ms)
 	for i := 0; i < len(ms.Pedidos); i++ {
 		nodo := buscarPosicion(&estructuras.RequestFind{
-			Departamento: ms.Inventarios[i].Departamento,
-			Nombre:       ms.Inventarios[i].Tienda,
-			Calificacion: ms.Inventarios[i].Calificacion,
+			Departamento: ms.Pedidos[i].Departamento,
+			Nombre:       ms.Pedidos[i].Tienda,
+			Calificacion: ms.Pedidos[i].Calificacion,
 		})
 		if nodo == nil {
-			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Inventarios[i].Tienda+"-;")
+			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Pedidos[i].Tienda+"-;")
 		} else {
-			if nodo.Inventario == nil {
-				nodo.Inventario = estructuras.NewArbol()
+			if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
+				fmt.Fprintln(w, "La_tienda:"+ms.Pedidos[i].Tienda+" no_posee_inventario-;")
 			}
-			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
-				//fmt.Println(ms.Inventarios[i].Productos[j].Nombre)
-				nodo.Inventario.Insertar(ms.Inventarios[i].Productos[j], ms.Inventarios[i].Productos[j].Codigo)
+			for j := 0; j < len(ms.Pedidos[i].Productos); j++ {
+				nodoArbol := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(ms.Pedidos[i].Productos[j].Codigo)
+				if nodoArbol != nil {
+					nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
+					fmt.Println(w, nodoArbol.Contenido.(*estructuras.Producto).Nombre+": "+strconv.Itoa(nodoArbol.Contenido.(*estructuras.Producto).Cantidad))
+				}
 			}
 		}
 	}
-	fmt.Fprintln(w, "Productos_Cargados")
-}*/
+	//fmt.Fprintln(w, "Pedidos_Cargados")
+	json.NewEncoder(w).Encode(ms)
+}
 
 func cargarInventarios(w http.ResponseWriter, r *http.Request) {
 	var ms *estructuras.ArchivoInventario
@@ -347,7 +351,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
-	//router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
+	router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("POST")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")

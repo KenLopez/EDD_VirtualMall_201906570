@@ -1,20 +1,24 @@
 package estructuras
 
-import "reflect"
+import (
+	"reflect"
+	"strconv"
+	"strings"
+)
 
 type NodoCabeceraVertical struct {
 	Este, Oeste, Sur, Norte interface{}
-	Dato                    interface{}
+	Dato                    string
 }
 
 type NodoMatriz struct {
 	Este, Oeste, Sur, Norte interface{}
-	Dato                    interface{}
+	Dato                    *Lista
 }
 
 type NodoCabeceraHorizontal struct {
 	Este, Oeste, Sur, Norte interface{}
-	Dato                    interface{}
+	Dato                    int
 }
 
 type Matriz struct {
@@ -22,7 +26,7 @@ type Matriz struct {
 	CabeceraV *NodoCabeceraVertical
 }
 
-func (matriz *Matriz) getVertical(dato int) interface{} {
+func (matriz *Matriz) getVertical(dato string) interface{} {
 	if matriz.CabeceraV == nil {
 		return nil
 	}
@@ -50,7 +54,7 @@ func (matriz *Matriz) getHorizontal(dato int) interface{} {
 	return nil
 }
 
-func (matriz *Matriz) crearVertical(dato int) *NodoCabeceraVertical {
+func (matriz *Matriz) crearVertical(dato string) *NodoCabeceraVertical {
 	if matriz.CabeceraV == nil {
 		nueva := &NodoCabeceraVertical{
 			Este:  nil,
@@ -63,7 +67,7 @@ func (matriz *Matriz) crearVertical(dato int) *NodoCabeceraVertical {
 		return nueva
 	}
 	var aux interface{} = matriz.CabeceraV
-	if dato < aux.(*NodoCabeceraVertical).Dato.(int) {
+	if dato < aux.(*NodoCabeceraVertical).Dato {
 		nueva := &NodoCabeceraVertical{
 			Este:  nil,
 			Oeste: nil,
@@ -77,7 +81,7 @@ func (matriz *Matriz) crearVertical(dato int) *NodoCabeceraVertical {
 		return nueva
 	}
 	for aux.(*NodoCabeceraVertical).Sur != nil {
-		if dato > aux.(*NodoCabeceraVertical).Dato.(int) && dato < aux.(*NodoCabeceraVertical).Sur.(*NodoCabeceraVertical).Dato.(int) {
+		if dato > aux.(*NodoCabeceraVertical).Dato && dato < aux.(*NodoCabeceraVertical).Sur.(*NodoCabeceraVertical).Dato {
 			nueva := &NodoCabeceraVertical{
 				Este:  nil,
 				Oeste: nil,
@@ -119,7 +123,7 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 		return nueva
 	}
 	var aux interface{} = matriz.CabeceraH
-	if dato < aux.(*NodoCabeceraHorizontal).Dato.(int) {
+	if dato < aux.(*NodoCabeceraHorizontal).Dato {
 		nueva := &NodoCabeceraHorizontal{
 			Este:  nil,
 			Oeste: nil,
@@ -133,7 +137,7 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 		return nueva
 	}
 	for aux.(*NodoCabeceraHorizontal).Este != nil {
-		if dato > aux.(*NodoCabeceraHorizontal).Dato.(int) && dato < aux.(*NodoCabeceraHorizontal).Sur.(*NodoCabeceraHorizontal).Dato.(int) {
+		if dato > aux.(*NodoCabeceraHorizontal).Dato && dato < aux.(*NodoCabeceraHorizontal).Sur.(*NodoCabeceraHorizontal).Dato {
 			nueva := &NodoCabeceraHorizontal{
 				Este:  nil,
 				Oeste: nil,
@@ -162,21 +166,21 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 	return nueva
 }
 
-func (matriz *Matriz) obtenerUltimoV(cabecera *NodoCabeceraHorizontal, dato int) interface{} {
+func (matriz *Matriz) obtenerUltimoV(cabecera *NodoCabeceraHorizontal, dato string) interface{} {
 	if cabecera.Sur == nil {
 		return cabecera
 	}
 	aux := cabecera.Sur
-	if dato <= aux.(*NodoMatriz).Dato.(int) {
+	if dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
 		return cabecera
 	}
 	for aux.(*NodoMatriz).Sur != nil {
-		if dato > aux.(*NodoMatriz).Dato.(int) && dato <= aux.(*NodoMatriz).Sur.(*NodoMatriz).Dato.(int) {
+		if dato > aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento && dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
 			return aux
 		}
 		aux = aux.(*NodoMatriz).Sur
 	}
-	if dato <= aux.(*NodoMatriz).Dato.(int) {
+	if dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
 		return aux.(*NodoMatriz).Norte
 	}
 	return aux
@@ -187,32 +191,32 @@ func (matriz *Matriz) obtenerUltimoH(cabecera *NodoCabeceraVertical, dato int) i
 		return cabecera
 	}
 	aux := cabecera.Este
-	if dato <= aux.(*NodoMatriz).Dato.(int) {
+	if dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
 		return cabecera
 	}
 	for aux.(*NodoMatriz).Este != nil {
-		if dato > aux.(*NodoMatriz).Dato.(int) && dato <= aux.(*NodoMatriz).Este.(*NodoMatriz).Dato.(int) {
+		if dato > GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) && dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
 			return aux
 		}
 		aux = aux.(*NodoMatriz).Este
 	}
-	if dato <= aux.(*NodoMatriz).Dato.(int) {
+	if dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
 		return aux.(*NodoMatriz).Oeste
 	}
 	return aux
 }
 
-func (matriz *Matriz) Add(nueva *NodoMatriz) {
-	vertical := matriz.getVertical(nueva.Dato.(int))
-	horizontal := matriz.getHorizontal(nueva.Dato.(int))
+func (matriz *Matriz) add(nueva *NodoMatriz) {
+	vertical := matriz.getVertical(nueva.Dato.First.Contenido.(*Pedido).Departamento)
+	horizontal := matriz.getHorizontal(GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
 	if vertical == nil {
-		vertical = matriz.crearVertical(nueva.Dato.(int))
+		vertical = matriz.crearVertical(nueva.Dato.First.Contenido.(*Pedido).Departamento)
 	}
 	if horizontal == nil {
-		horizontal = matriz.crearHorizontal(nueva.Dato.(int))
+		horizontal = matriz.crearHorizontal(GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
 	}
-	izquierda := matriz.obtenerUltimoH(vertical.(*NodoCabeceraVertical), nueva.Dato.(int))
-	superior := matriz.obtenerUltimoV(horizontal.(*NodoCabeceraHorizontal), nueva.Dato.(int))
+	izquierda := matriz.obtenerUltimoH(vertical.(*NodoCabeceraVertical), GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
+	superior := matriz.obtenerUltimoV(horizontal.(*NodoCabeceraHorizontal), nueva.Dato.First.Contenido.(*Pedido).Departamento)
 	if reflect.TypeOf(izquierda).String() == "estructuras.NodoMatriz" {
 		if izquierda.(*NodoMatriz).Este == nil {
 			izquierda.(*NodoMatriz).Este = nueva
@@ -259,4 +263,40 @@ func (matriz *Matriz) Add(nueva *NodoMatriz) {
 			nueva.Este = tmp
 		}
 	}
+}
+
+func GetDia(fecha string) int {
+	a := strings.Split(fecha, "-")[0]
+	b, _ := strconv.Atoi(a)
+	return b
+}
+
+func GetMesName(numero int) string {
+	switch numero {
+	case 1:
+		return "ENERO"
+	case 2:
+		return "FEBRERO"
+	case 3:
+		return "MARZO"
+	case 4:
+		return "ABRIL"
+	case 5:
+		return "MAYO"
+	case 6:
+		return "JUNIO"
+	case 7:
+		return "JULIO"
+	case 8:
+		return "AGOSTO"
+	case 9:
+		return "SEPTIEMBRE"
+	case 10:
+		return "OCTUBRE"
+	case 11:
+		return "NOVIEMBRE"
+	case 12:
+		return "DICIEMBRE"
+	}
+	return "ERROR"
 }
