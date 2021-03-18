@@ -1,5 +1,10 @@
 package estructuras
 
+import (
+	"strconv"
+	"strings"
+)
+
 type ArchivoInventario struct {
 	Inventarios []*Inventario `json:Inventarios`
 }
@@ -9,13 +14,15 @@ type ArchivoPedido struct {
 }
 
 type Pedido struct {
-	Fecha        string `json:Fecha`
-	Tienda       string `json:Tienda`
-	Departamento string `json:Departamento`
-	Calificacion int    `json:Calificacion`
-	Productos    []*struct {
-		Codigo int `json:Codigo`
-	} `json:Productos`
+	Fecha        string    `json:Fecha`
+	Tienda       string    `json:Tienda`
+	Departamento string    `json:Departamento`
+	Calificacion int       `json:Calificacion`
+	Productos    []*Codigo `json:Productos`
+}
+
+type Codigo struct {
+	Codigo int `json:Codigo`
 }
 
 type Inventario struct {
@@ -78,4 +85,52 @@ func GetAscii(cadena string) int {
 		ascii += int(cadena[i])
 	}
 	return ascii
+}
+
+func GetDia(fecha string) int {
+	a := strings.Split(fecha, "-")[0]
+	b, _ := strconv.Atoi(a)
+	return b
+}
+
+func GetAnio(fecha string) int {
+	a := strings.Split(fecha, "-")[2]
+	b, _ := strconv.Atoi(a)
+	return b
+}
+
+func GetMes(fecha string) int {
+	a := strings.Split(fecha, "-")[1]
+	b, _ := strconv.Atoi(a)
+	return b
+}
+
+func GetMesName(numero int) string {
+	switch numero {
+	case 1:
+		return "ENERO"
+	case 2:
+		return "FEBRERO"
+	case 3:
+		return "MARZO"
+	case 4:
+		return "ABRIL"
+	case 5:
+		return "MAYO"
+	case 6:
+		return "JUNIO"
+	case 7:
+		return "JULIO"
+	case 8:
+		return "AGOSTO"
+	case 9:
+		return "SEPTIEMBRE"
+	case 10:
+		return "OCTUBRE"
+	case 11:
+		return "NOVIEMBRE"
+	case 12:
+		return "DICIEMBRE"
+	}
+	return "ERROR"
 }

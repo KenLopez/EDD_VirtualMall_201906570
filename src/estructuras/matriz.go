@@ -2,8 +2,6 @@ package estructuras
 
 import (
 	"reflect"
-	"strconv"
-	"strings"
 )
 
 type NodoCabeceraVertical struct {
@@ -13,7 +11,7 @@ type NodoCabeceraVertical struct {
 
 type NodoMatriz struct {
 	Este, Oeste, Sur, Norte interface{}
-	Dato                    *Lista
+	Dato                    *Cola
 }
 
 type NodoCabeceraHorizontal struct {
@@ -24,6 +22,23 @@ type NodoCabeceraHorizontal struct {
 type Matriz struct {
 	CabeceraH *NodoCabeceraHorizontal
 	CabeceraV *NodoCabeceraVertical
+}
+
+func NewMatriz() *Matriz {
+	return &Matriz{
+		CabeceraH: nil,
+		CabeceraV: nil,
+	}
+}
+
+func NewNodoMatriz(cola *Cola) *NodoMatriz {
+	return &NodoMatriz{
+		Este:  nil,
+		Oeste: nil,
+		Sur:   nil,
+		Norte: nil,
+		Dato:  cola,
+	}
 }
 
 func (matriz *Matriz) getVertical(dato string) interface{} {
@@ -111,7 +126,7 @@ func (matriz *Matriz) crearVertical(dato string) *NodoCabeceraVertical {
 }
 
 func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
-	if matriz.CabeceraV == nil {
+	if matriz.CabeceraH == nil {
 		nueva := &NodoCabeceraHorizontal{
 			Este:  nil,
 			Oeste: nil,
@@ -123,7 +138,7 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 		return nueva
 	}
 	var aux interface{} = matriz.CabeceraH
-	if dato < aux.(*NodoCabeceraHorizontal).Dato {
+	if dato <= aux.(*NodoCabeceraHorizontal).Dato {
 		nueva := &NodoCabeceraHorizontal{
 			Este:  nil,
 			Oeste: nil,
@@ -137,7 +152,7 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 		return nueva
 	}
 	for aux.(*NodoCabeceraHorizontal).Este != nil {
-		if dato > aux.(*NodoCabeceraHorizontal).Dato && dato < aux.(*NodoCabeceraHorizontal).Sur.(*NodoCabeceraHorizontal).Dato {
+		if dato > aux.(*NodoCabeceraHorizontal).Dato && dato <= aux.(*NodoCabeceraHorizontal).Sur.(*NodoCabeceraHorizontal).Dato {
 			nueva := &NodoCabeceraHorizontal{
 				Este:  nil,
 				Oeste: nil,
@@ -171,16 +186,16 @@ func (matriz *Matriz) obtenerUltimoV(cabecera *NodoCabeceraHorizontal, dato stri
 		return cabecera
 	}
 	aux := cabecera.Sur
-	if dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
+	if dato <= aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Departamento {
 		return cabecera
 	}
 	for aux.(*NodoMatriz).Sur != nil {
-		if dato > aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento && dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
+		if dato > aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Departamento && dato <= aux.(*NodoMatriz).Sur.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Departamento {
 			return aux
 		}
 		aux = aux.(*NodoMatriz).Sur
 	}
-	if dato <= aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Departamento {
+	if dato <= aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Departamento {
 		return aux.(*NodoMatriz).Norte
 	}
 	return aux
@@ -191,33 +206,56 @@ func (matriz *Matriz) obtenerUltimoH(cabecera *NodoCabeceraVertical, dato int) i
 		return cabecera
 	}
 	aux := cabecera.Este
-	if dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
+	if dato <= GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) {
 		return cabecera
 	}
 	for aux.(*NodoMatriz).Este != nil {
-		if dato > GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) && dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
+		if dato > GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) && dato <= GetDia(aux.(*NodoMatriz).Este.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) {
 			return aux
 		}
 		aux = aux.(*NodoMatriz).Este
 	}
-	if dato <= GetDia(aux.(*NodoMatriz).Dato.First.Contenido.(*Pedido).Fecha) {
+	if dato <= GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) {
 		return aux.(*NodoMatriz).Oeste
 	}
 	return aux
 }
 
+func (matriz *Matriz) NuevoPedido(nuevo *Pedido) {
+	cabecera := matriz.getVertical(nuevo.Departamento)
+	if cabecera == nil {
+		cola := NewCola()
+		cola.Queue(nuevo)
+		matriz.add(NewNodoMatriz(cola))
+	} else {
+		aux := cabecera.(*NodoCabeceraVertical).Este
+		for aux != nil {
+			if GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) == GetDia(nuevo.Fecha) {
+				aux.(*NodoMatriz).Dato.Queue(nuevo)
+				break
+			}
+			aux = aux.(*NodoMatriz).Este
+			if aux == nil {
+				cola := NewCola()
+				cola.Queue(nuevo)
+				matriz.add(NewNodoMatriz(cola))
+			}
+		}
+	}
+}
+
 func (matriz *Matriz) add(nueva *NodoMatriz) {
-	vertical := matriz.getVertical(nueva.Dato.First.Contenido.(*Pedido).Departamento)
-	horizontal := matriz.getHorizontal(GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
+	vertical := matriz.getVertical(nueva.Dato.Frente.Contenido.(*Pedido).Departamento)
+	horizontal := matriz.getHorizontal(GetDia(nueva.Dato.Frente.Contenido.(*Pedido).Fecha))
 	if vertical == nil {
-		vertical = matriz.crearVertical(nueva.Dato.First.Contenido.(*Pedido).Departamento)
+		vertical = matriz.crearVertical(nueva.Dato.Frente.Contenido.(*Pedido).Departamento)
 	}
 	if horizontal == nil {
-		horizontal = matriz.crearHorizontal(GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
+		horizontal = matriz.crearHorizontal(GetDia(nueva.Dato.Frente.Contenido.(*Pedido).Fecha))
 	}
-	izquierda := matriz.obtenerUltimoH(vertical.(*NodoCabeceraVertical), GetDia(nueva.Dato.First.Contenido.(*Pedido).Fecha))
-	superior := matriz.obtenerUltimoV(horizontal.(*NodoCabeceraHorizontal), nueva.Dato.First.Contenido.(*Pedido).Departamento)
-	if reflect.TypeOf(izquierda).String() == "estructuras.NodoMatriz" {
+	izquierda := matriz.obtenerUltimoH(vertical.(*NodoCabeceraVertical), GetDia(nueva.Dato.Frente.Contenido.(*Pedido).Fecha))
+	superior := matriz.obtenerUltimoV(horizontal.(*NodoCabeceraHorizontal), nueva.Dato.Frente.Contenido.(*Pedido).Departamento)
+	if reflect.TypeOf(izquierda).String() == "*estructuras.NodoMatriz" {
 		if izquierda.(*NodoMatriz).Este == nil {
 			izquierda.(*NodoMatriz).Este = nueva
 			nueva.Oeste = izquierda
@@ -240,7 +278,7 @@ func (matriz *Matriz) add(nueva *NodoMatriz) {
 			nueva.Este = tmp
 		}
 	}
-	if reflect.TypeOf(superior).String() == "estructuras.NodoMatriz" {
+	if reflect.TypeOf(superior).String() == "*estructuras.NodoMatriz" {
 		if superior.(*NodoMatriz).Sur == nil {
 			superior.(*NodoMatriz).Sur = nueva
 			nueva.Norte = superior
@@ -256,47 +294,11 @@ func (matriz *Matriz) add(nueva *NodoMatriz) {
 			superior.(*NodoCabeceraHorizontal).Sur = nueva
 			nueva.Norte = superior
 		} else {
-			tmp := izquierda.(*NodoCabeceraVertical).Este
-			izquierda.(*NodoCabeceraVertical).Este = nueva
-			nueva.Oeste = izquierda
-			tmp.(*NodoMatriz).Oeste = nueva
-			nueva.Este = tmp
+			tmp := superior.(*NodoCabeceraHorizontal).Sur
+			superior.(*NodoCabeceraHorizontal).Sur = nueva
+			nueva.Norte = superior
+			tmp.(*NodoMatriz).Norte = nueva
+			nueva.Sur = tmp
 		}
 	}
-}
-
-func GetDia(fecha string) int {
-	a := strings.Split(fecha, "-")[0]
-	b, _ := strconv.Atoi(a)
-	return b
-}
-
-func GetMesName(numero int) string {
-	switch numero {
-	case 1:
-		return "ENERO"
-	case 2:
-		return "FEBRERO"
-	case 3:
-		return "MARZO"
-	case 4:
-		return "ABRIL"
-	case 5:
-		return "MAYO"
-	case 6:
-		return "JUNIO"
-	case 7:
-		return "JULIO"
-	case 8:
-		return "AGOSTO"
-	case 9:
-		return "SEPTIEMBRE"
-	case 10:
-		return "OCTUBRE"
-	case 11:
-		return "NOVIEMBRE"
-	case 12:
-		return "DICIEMBRE"
-	}
-	return "ERROR"
 }

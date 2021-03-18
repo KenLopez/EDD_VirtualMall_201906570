@@ -16,6 +16,7 @@ import (
 
 var indices, nombresDep []string
 var vectorDatos []*estructuras.Lista
+var arbolAnios *estructuras.Arbol
 
 func inicial(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "A_tus_órdenes,_capitán... :D")
@@ -49,21 +50,38 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 		})
 		if nodo == nil {
 			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Pedidos[i].Tienda+"-;")
+		} else if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
+			fmt.Fprintln(w, "La_tienda:"+ms.Pedidos[i].Tienda+" no_posee_inventario-;")
 		} else {
-			if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
-				fmt.Fprintln(w, "La_tienda:"+ms.Pedidos[i].Tienda+" no_posee_inventario-;")
-			}
+			var prodOk []*estructuras.Codigo
 			for j := 0; j < len(ms.Pedidos[i].Productos); j++ {
 				nodoArbol := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(ms.Pedidos[i].Productos[j].Codigo)
 				if nodoArbol != nil {
 					nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
-					fmt.Println(w, nodoArbol.Contenido.(*estructuras.Producto).Nombre+": "+strconv.Itoa(nodoArbol.Contenido.(*estructuras.Producto).Cantidad))
+					prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
+					//fmt.Println(w, nodoArbol.Contenido.(*estructuras.Producto).Nombre+": "+strconv.Itoa(nodoArbol.Contenido.(*estructuras.Producto).Cantidad))
 				}
+			}
+			if len(prodOk) != 0 {
+				ms.Pedidos[i].Productos = prodOk
+				if arbolAnios == nil {
+					arbolAnios = estructuras.NewArbol()
+				}
+				if arbolAnios.Buscar(estructuras.GetAnio(ms.Pedidos[i].Fecha)) == nil {
+					arbolAnios.Insertar(estructuras.NewArbol(), estructuras.GetAnio(ms.Pedidos[i].Fecha))
+				}
+				nodoAnio := arbolAnios.Buscar(estructuras.GetAnio(ms.Pedidos[i].Fecha))
+				if nodoAnio.Contenido.(*estructuras.Arbol).Buscar(estructuras.GetMes(ms.Pedidos[i].Fecha)) == nil {
+					nodoAnio.Contenido.(*estructuras.Arbol).Insertar(estructuras.NewMatriz(), estructuras.GetMes(ms.Pedidos[i].Fecha))
+				}
+				nodoMes := nodoAnio.Contenido.(*estructuras.Arbol).Buscar(estructuras.GetMes(ms.Pedidos[i].Fecha))
+				nodoMes.Contenido.(*estructuras.Matriz).NuevoPedido(ms.Pedidos[i])
+
 			}
 		}
 	}
-	//fmt.Fprintln(w, "Pedidos_Cargados")
-	json.NewEncoder(w).Encode(ms)
+	fmt.Fprintln(w, "Pedidos_Cargados")
+	//json.NewEncoder(w).Encode(ms)
 }
 
 func cargarInventarios(w http.ResponseWriter, r *http.Request) {
@@ -311,6 +329,21 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getArbolAnio(w http.ResponseWriter, r *http.Request) {
+	if arbolAnios != nil {
+		data := []byte(arbolAnios.Graficar(false))
+		_ = ioutil.WriteFile("Arbol-Anios.dot", data, 0644)
+		path, _ := exec.LookPath("dot")
+		cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Anios.dot").Output()
+		_ = ioutil.WriteFile("Arbol-Anios.pdf", cmd, os.FileMode(0777))
+
+		fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+	} else {
+		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+	}
+
+}
+
 func linealizar(ms *estructuras.Archivo) {
 	var vector []*estructuras.Lista
 	var letras []string
@@ -347,6 +380,30 @@ func linealizar(ms *estructuras.Archivo) {
 	vectorDatos = vector
 }
 
+func getArbolMeses(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	numero, err := strconv.Atoi(vars["anio"])
+	if err != nil {
+		fmt.Fprintf(w, "Error")
+	} else if arbolAnios == nil {
+		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+	} else {
+		arbol := arbolAnios.Buscar(numero).Contenido.(*estructuras.Arbol)
+		if arbol != nil {
+			data := []byte(arbol.Graficar(true))
+			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".dot", data, 0644)
+			path, _ := exec.LookPath("dot")
+			cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Meses-"+strconv.Itoa(numero)+".dot").Output()
+			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".pdf", cmd, os.FileMode(0777))
+
+			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+		} else {
+			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		}
+	}
+
+}
+
 func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
@@ -358,5 +415,35 @@ func main() {
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
 	router.HandleFunc("/guardar", guardar).Methods("GET")
 	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
+	router.HandleFunc("/GetArbolAnio", getArbolAnio).Methods("GET")
+	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
 	log.Fatal(http.ListenAndServe(":3000", router))
+	/*matriz := estructuras.NewMatriz()
+	var productos []*estructuras.Codigo
+	productos = append(productos, &estructuras.Codigo{Codigo: 979})
+	productos = append(productos, &estructuras.Codigo{Codigo: 981})
+	productos = append(productos, &estructuras.Codigo{Codigo: 977})
+	productos = append(productos, &estructuras.Codigo{Codigo: 977})
+	matriz.NuevoPedido(&estructuras.Pedido{
+		Fecha:        "19-05-2019",
+		Tienda:       "Alejandro Hermanos",
+		Departamento: "Seguridad y Vigilancia",
+		Calificacion: 3,
+		Productos:    productos,
+	})
+	matriz.NuevoPedido(&estructuras.Pedido{
+		Fecha:        "19-05-2019",
+		Tienda:       "Alejandro Hermanos",
+		Departamento: "Seguridad y Vigilancia",
+		Calificacion: 3,
+		Productos:    productos,
+	})
+	matriz.NuevoPedido(&estructuras.Pedido{
+		Fecha:        "21-03-2020",
+		Tienda:       "Borrego Rocha e Hijos",
+		Departamento: "Television y Video",
+		Calificacion: 3,
+		Productos:    productos,
+	})
+	fmt.Println()*/
 }

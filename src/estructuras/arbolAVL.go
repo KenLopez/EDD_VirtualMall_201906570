@@ -64,6 +64,7 @@ func rotarDD(n *NodoArbol) *NodoArbol {
 func rotarDI(n *NodoArbol) *NodoArbol {
 	n1 := n.Der
 	n2 := n1.Izq
+	n.Der = n2.Izq
 	n2.Izq = n
 	n1.Izq = n2.Der
 	n2.Der = n1
@@ -84,19 +85,19 @@ func rotarDI(n *NodoArbol) *NodoArbol {
 func rotarID(n *NodoArbol) *NodoArbol {
 	n1 := n.Izq
 	n2 := n1.Der
-	n1.Izq = n2.Der
+	n.Izq = n2.Der
 	n2.Der = n
 	n1.Der = n2.Izq
 	n2.Izq = n1
 	if n2.Peso == 1 {
-		n.Peso = -1
-	} else {
-		n.Peso = 0
-	}
-	if n2.Peso == -1 {
-		n1.Peso = 1
+		n1.Peso = -1
 	} else {
 		n1.Peso = 0
+	}
+	if n2.Peso == -1 {
+		n.Peso = 1
+	} else {
+		n.Peso = 0
 	}
 	n2.Peso = 0
 	return n2
@@ -129,7 +130,7 @@ func insertar(raiz *NodoArbol, dato int, contenido interface{}, hc *bool) *NodoA
 				*hc = false
 			}
 		}
-	} else if dato > raiz.Dato {
+	} else if dato >= raiz.Dato {
 		der := insertar(raiz.Der, dato, contenido, hc)
 		raiz.Der = der
 		if *hc {
@@ -163,8 +164,8 @@ func (arbol *Arbol) Insertar(contenido interface{}, dato int) {
 		arbol.raiz = insertar(arbol.raiz, dato, contenido, &b)
 	} else {
 		if reflect.TypeOf(nodo.Contenido).String() == "*estructuras.Producto" {
-			//nodo.contenido.(*Producto).Cantidad += contenido.(*Producto).Cantidad
-			fmt.Println(nodo.Contenido.(*Producto).Nombre + ": " + strconv.Itoa(nodo.Contenido.(*Producto).Cantidad))
+			nodo.Contenido.(*Producto).Cantidad += contenido.(*Producto).Cantidad
+			//fmt.Println(nodo.Contenido.(*Producto).Nombre + ": " + strconv.Itoa(nodo.Contenido.(*Producto).Cantidad))
 		}
 	}
 
@@ -185,4 +186,38 @@ func buscar(nodo *NodoArbol, dato int) *NodoArbol {
 		return buscar(nodo.Izq, dato)
 	}
 	return buscar(nodo.Der, dato)
+}
+
+func (arbol *Arbol) GetTag(n *NodoArbol, meses bool) string {
+	var cadena string = fmt.Sprintf("nodo%p", n) + "[label=\"|{" + "Peso: " + strconv.Itoa(n.Peso) + "|" + n.GetDato(meses) + "}|\"];\n"
+	if n.Der == nil && n.Izq == nil {
+		return cadena
+	}
+	if n.Izq != nil {
+		cadena += arbol.GetTag(n.Izq, meses)
+		cadena += fmt.Sprintf("nodo%p", n) + "->" + fmt.Sprintf("nodo%p", n.Izq) + "[arrowhead=rvee, color=brown];\n"
+	}
+	if n.Der != nil {
+		cadena += arbol.GetTag(n.Der, meses)
+		cadena += fmt.Sprintf("nodo%p", n) + "->" + fmt.Sprintf("nodo%p", n.Der) + "[arrowhead=lvee, color=brown];\n"
+	}
+	return cadena
+}
+
+func (nodo *NodoArbol) GetDato(meses bool) string {
+	if meses {
+		return GetMesName(nodo.Dato)
+	}
+	return strconv.Itoa(nodo.Dato)
+}
+
+func (arbol *Arbol) Graficar(meses bool) string {
+	if arbol.raiz != nil {
+		archivo := "digraph G{\nnode[shape=Mrecord, color=\"#00bf0d\"];\nrankdir=TD;\n"
+		archivo += arbol.GetTag(arbol.raiz, meses)
+		archivo += "}"
+		return archivo
+	} else {
+		return ""
+	}
 }

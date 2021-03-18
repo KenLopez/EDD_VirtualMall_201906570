@@ -1,6 +1,8 @@
 package estructuras
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type Nodo struct {
 	Contenido  interface{}
@@ -35,10 +37,8 @@ func (this *Lista) Buscar(dato string) *Nodo {
 	} else {
 		aux := this.First
 		for i := 0; i < this.Size; i++ {
-			if reflect.TypeOf(aux.Contenido).String() == "*estructuras.NodoTienda" {
-				if aux.Contenido.(*NodoTienda).Tienda.Nombre == dato {
-					return aux
-				}
+			if aux.GetDatoString() == dato {
+				return aux
 			}
 			aux = aux.Next
 		}
