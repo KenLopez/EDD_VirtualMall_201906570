@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"./estructuras"
 	"github.com/gorilla/mux"
@@ -80,6 +81,8 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	arbol := arbolAnios
+	arbol.Buscar(5)
 	fmt.Fprintln(w, "Pedidos_Cargados")
 	//json.NewEncoder(w).Encode(ms)
 }
@@ -401,7 +404,69 @@ func getArbolMeses(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
 		}
 	}
+}
 
+func getMatriz(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	anio, err1 := strconv.Atoi(vars["anio"])
+	mes, err2 := strconv.Atoi(vars["mes"])
+	if err1 != nil || err2 != nil {
+		fmt.Fprintf(w, "Error")
+	} else if arbolAnios == nil {
+		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+	} else {
+		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
+		if arbolM != nil {
+			nodoM := arbolM.Buscar(mes)
+			if nodoM != nil {
+				data := []byte(nodoM.Contenido.(*estructuras.Matriz).Graficar(estructuras.GetMesName(nodoM.Dato)))
+				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".dot", data, 0644)
+				path, _ := exec.LookPath("dot")
+				cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".dot").Output()
+				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".pdf", cmd, os.FileMode(0777))
+
+				fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+			} else {
+				fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			}
+		} else {
+			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		}
+	}
+}
+
+func getPedidosDia(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	anio, err1 := strconv.Atoi(vars["anio"])
+	mes, err2 := strconv.Atoi(vars["mes"])
+	categoria := strings.ReplaceAll(vars["categoria"], "_", " ")
+	dia, err4 := strconv.Atoi(vars["dia"])
+	if err1 != nil || err2 != nil || err4 != nil {
+		fmt.Fprintf(w, "Error")
+	} else if arbolAnios == nil {
+		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+	} else {
+		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
+		if arbolM != nil {
+			nodoM := arbolM.Buscar(mes)
+			if nodoM != nil {
+				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
+				if cola != nil {
+					data := []byte(cola.GraficarPedidos())
+					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".dot", data, 0644)
+					path, _ := exec.LookPath("dot")
+					cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".dot").Output()
+					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".pdf", cmd, os.FileMode(0777))
+
+					fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+				}
+			} else {
+				fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			}
+		} else {
+			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		}
+	}
 }
 
 func main() {
@@ -417,33 +482,7 @@ func main() {
 	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
 	router.HandleFunc("/GetArbolAnio", getArbolAnio).Methods("GET")
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
+	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
+	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
 	log.Fatal(http.ListenAndServe(":3000", router))
-	/*matriz := estructuras.NewMatriz()
-	var productos []*estructuras.Codigo
-	productos = append(productos, &estructuras.Codigo{Codigo: 979})
-	productos = append(productos, &estructuras.Codigo{Codigo: 981})
-	productos = append(productos, &estructuras.Codigo{Codigo: 977})
-	productos = append(productos, &estructuras.Codigo{Codigo: 977})
-	matriz.NuevoPedido(&estructuras.Pedido{
-		Fecha:        "19-05-2019",
-		Tienda:       "Alejandro Hermanos",
-		Departamento: "Seguridad y Vigilancia",
-		Calificacion: 3,
-		Productos:    productos,
-	})
-	matriz.NuevoPedido(&estructuras.Pedido{
-		Fecha:        "19-05-2019",
-		Tienda:       "Alejandro Hermanos",
-		Departamento: "Seguridad y Vigilancia",
-		Calificacion: 3,
-		Productos:    productos,
-	})
-	matriz.NuevoPedido(&estructuras.Pedido{
-		Fecha:        "21-03-2020",
-		Tienda:       "Borrego Rocha e Hijos",
-		Departamento: "Television y Video",
-		Calificacion: 3,
-		Productos:    productos,
-	})
-	fmt.Println()*/
 }

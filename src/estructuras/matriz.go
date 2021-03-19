@@ -1,7 +1,9 @@
 package estructuras
 
 import (
+	"fmt"
 	"reflect"
+	"strconv"
 )
 
 type NodoCabeceraVertical struct {
@@ -221,6 +223,19 @@ func (matriz *Matriz) obtenerUltimoH(cabecera *NodoCabeceraVertical, dato int) i
 	return aux
 }
 
+func (matriz *Matriz) Get(dia int, categoria string) *NodoMatriz {
+	cabecera := matriz.getVertical(categoria)
+	if cabecera != nil {
+		aux := cabecera.(*NodoCabeceraVertical).Este
+		for aux != nil {
+			if GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) == dia {
+				return aux.(*NodoMatriz)
+			}
+		}
+	}
+	return nil
+}
+
 func (matriz *Matriz) NuevoPedido(nuevo *Pedido) {
 	cabecera := matriz.getVertical(nuevo.Departamento)
 	if cabecera == nil {
@@ -241,6 +256,53 @@ func (matriz *Matriz) NuevoPedido(nuevo *Pedido) {
 				matriz.add(NewNodoMatriz(cola))
 			}
 		}
+	}
+}
+
+func (matriz *Matriz) Graficar(nombre string) string {
+	if matriz.CabeceraH != nil && matriz.CabeceraV != nil {
+		var archivo string = "graph Matriz{\nlayout=dot\nlabelloc = \"t\"\nnode [shape=Mrecord]\nedge [weight=1000, minlen=1.5 style=rigid color=orange]\n"
+		var rank string = ""
+		var nodos string = ""
+		var conexionesV string = ""
+		archivo += fmt.Sprintf("nodo%p", matriz) + "[color=red, label=\"PEDIDOS\\n" + nombre + "\"]\n"
+		rango := fmt.Sprintf("nodo%p", matriz) + "--" + fmt.Sprintf("nodo%p", matriz.CabeceraH) + "\n"
+		conexionesV += fmt.Sprintf("nodo%p", matriz) + "--" + fmt.Sprintf("nodo%p", matriz.CabeceraV) + "\n"
+		var actualH interface{} = matriz.CabeceraH
+		for actualH != nil {
+			nodos += fmt.Sprintf("nodo%p", actualH) + "[color=purple, label=\"" + strconv.Itoa(actualH.(*NodoCabeceraHorizontal).Dato) + "\"]\n"
+			if actualH.(*NodoCabeceraHorizontal).Este != nil {
+				rango += fmt.Sprintf("nodo%p", actualH) + "--" + fmt.Sprintf("nodo%p", actualH.(*NodoCabeceraHorizontal).Este) + "\n"
+			}
+			conexionesV += fmt.Sprintf("nodo%p", actualH) + "--" + fmt.Sprintf("nodo%p", actualH.(*NodoCabeceraHorizontal).Sur) + "\n"
+			actualH = actualH.(*NodoCabeceraHorizontal).Este
+		}
+		rank += "rank=same{\n" + rango + "}\n"
+		var actualV interface{} = matriz.CabeceraV
+		for actualV != nil {
+			rango = fmt.Sprintf("nodo%p", actualV) + "--" + fmt.Sprintf("nodo%p", actualV.(*NodoCabeceraVertical).Este) + "\n"
+			nodos += fmt.Sprintf("nodo%p", actualV) + "[color=purple, label=\"" + actualV.(*NodoCabeceraVertical).Dato + "\"]\n"
+			var aux interface{} = actualV.(*NodoCabeceraVertical).Este
+			for aux != nil {
+				nodos += fmt.Sprintf("nodo%p", aux) + "[color=brown, style=filled, fillcolor=beige label=\"\"]\n"
+				if aux.(*NodoMatriz).Este != nil {
+					rango = fmt.Sprintf("nodo%p", actualV) + "--" + fmt.Sprintf("nodo%p", actualV.(*NodoCabeceraVertical).Este) + "\n"
+				}
+				if aux.(*NodoMatriz).Sur != nil {
+					conexionesV += fmt.Sprintf("nodo%p", aux) + "--" + fmt.Sprintf("nodo%p", aux.(*NodoMatriz).Sur) + "\n"
+				}
+				aux = aux.(*NodoMatriz).Este
+			}
+			if actualV.(*NodoCabeceraVertical).Sur != nil {
+				conexionesV += fmt.Sprintf("nodo%p", actualV) + "--" + fmt.Sprintf("nodo%p", actualV.(*NodoCabeceraVertical).Sur) + "\n"
+			}
+			rank += "rank=same{\n" + rango + "}\n"
+			actualV = actualV.(*NodoCabeceraVertical).Sur
+		}
+		archivo += nodos + conexionesV + rank + "\n}"
+		return archivo
+	} else {
+		return ""
 	}
 }
 
