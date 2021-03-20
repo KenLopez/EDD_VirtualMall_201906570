@@ -81,8 +81,8 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	arbol := arbolAnios
-	arbol.Buscar(5)
+	//arbol := arbolAnios
+	//arbol.Buscar(5)
 	fmt.Fprintln(w, "Pedidos_Cargados")
 	//json.NewEncoder(w).Encode(ms)
 }
@@ -162,11 +162,10 @@ func buscarPosicion(request *estructuras.RequestFind) *estructuras.Nodo {
 }
 
 func calcularPos(fila int, columna int, calificacion int) int {
-	var s int
-	s = columna*len(indices) + fila
-	fmt.Print(columna)
-	fmt.Print(s)
-	fmt.Print(s*5 + calificacion - 1)
+	var s int = columna*len(indices) + fila
+	//fmt.Print(columna)
+	//fmt.Print(s)
+	//fmt.Print(s*5 + calificacion - 1)
 	return s*5 + calificacion - 1
 }
 
@@ -327,7 +326,10 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 	path, _ := exec.LookPath("dot")
 	cmd, _ := exec.Command(path, "-Tpdf", "Grafica.dot").Output()
 	_ = ioutil.WriteFile("Grafica.pdf", cmd, os.FileMode(0777))
-
+	e := os.Remove("Grafica.dot")
+	if e != nil {
+		log.Fatal(e)
+	}
 	fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 
 }
@@ -339,7 +341,10 @@ func getArbolAnio(w http.ResponseWriter, r *http.Request) {
 		path, _ := exec.LookPath("dot")
 		cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Anios.dot").Output()
 		_ = ioutil.WriteFile("Arbol-Anios.pdf", cmd, os.FileMode(0777))
-
+		e := os.Remove("Arbol-Anios.dot")
+		if e != nil {
+			log.Fatal(e)
+		}
 		fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 	} else {
 		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
@@ -398,7 +403,10 @@ func getArbolMeses(w http.ResponseWriter, r *http.Request) {
 			path, _ := exec.LookPath("dot")
 			cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Meses-"+strconv.Itoa(numero)+".dot").Output()
 			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".pdf", cmd, os.FileMode(0777))
-
+			e := os.Remove("Arbol-Meses-" + strconv.Itoa(numero) + ".dot")
+			if e != nil {
+				log.Fatal(e)
+			}
 			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 		} else {
 			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
@@ -424,7 +432,10 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 				path, _ := exec.LookPath("dot")
 				cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".dot").Output()
 				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".pdf", cmd, os.FileMode(0777))
-
+				e := os.Remove("Pedidos-" + estructuras.GetMesName(nodoM.Dato) + ".dot")
+				if e != nil {
+					log.Fatal(e)
+				}
 				fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 			} else {
 				fmt.Fprintf(w, "No_Se_Pudo_Graficar")
@@ -457,7 +468,10 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 					path, _ := exec.LookPath("dot")
 					cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".dot").Output()
 					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".pdf", cmd, os.FileMode(0777))
-
+					e := os.Remove("Pedidos-" + categoria + "-" + strconv.Itoa(dia) + ".dot")
+					if e != nil {
+						log.Fatal(e)
+					}
 					fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 				}
 			} else {
@@ -466,6 +480,37 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
 		}
+	}
+}
+
+func getArbolInventario(w http.ResponseWriter, r *http.Request) {
+	var busqueda *estructuras.RequestFind
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_:c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &busqueda)
+	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	if nodo == nil {
+		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
+	} else {
+		if nodo.Contenido.(*estructuras.NodoTienda).Inventario != nil {
+			title := "Inventario-" + busqueda.Departamento + "-" + strings.ReplaceAll(busqueda.Nombre, " ", "_")
+			data := []byte(nodo.Contenido.(*estructuras.NodoTienda).Inventario.Graficar(false))
+			_ = ioutil.WriteFile(title+".dot", data, 0644)
+			path, _ := exec.LookPath("dot")
+			cmd, _ := exec.Command(path, "-Tpdf", title+".dot").Output()
+			_ = ioutil.WriteFile(title+".pdf", cmd, os.FileMode(0777))
+			e := os.Remove(title + ".dot")
+			if e != nil {
+				log.Fatal(e)
+			}
+			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+		} else {
+			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		}
+
 	}
 }
 
@@ -484,5 +529,6 @@ func main() {
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
+	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("GET")
 	log.Fatal(http.ListenAndServe(":3000", router))
 }

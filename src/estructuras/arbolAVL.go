@@ -189,17 +189,35 @@ func buscar(nodo *NodoArbol, dato int) *NodoArbol {
 }
 
 func (arbol *Arbol) GetTag(n *NodoArbol, meses bool) string {
-	var cadena string = fmt.Sprintf("nodo%p", n) + "[label=\"|{" + "Peso: " + strconv.Itoa(n.Peso) + "|" + n.GetDato(meses) + "}|\"];\n"
+	var cadena string = fmt.Sprintf("nodo%p", n) + "[label=\"<f0>|{" + "Peso: " + strconv.Itoa(n.Peso) + "|" + n.GetDato(meses) + "}|<f1>\"];\n"
 	if n.Der == nil && n.Izq == nil {
 		return cadena
 	}
 	if n.Izq != nil {
 		cadena += arbol.GetTag(n.Izq, meses)
-		cadena += fmt.Sprintf("nodo%p", n) + "->" + fmt.Sprintf("nodo%p", n.Izq) + "[arrowhead=rvee, color=brown];\n"
+		cadena += fmt.Sprintf("nodo%p", n) + ": <f0>" + "->" + fmt.Sprintf("nodo%p", n.Izq) + "[arrowhead=rvee, color=brown];\n"
 	}
 	if n.Der != nil {
 		cadena += arbol.GetTag(n.Der, meses)
-		cadena += fmt.Sprintf("nodo%p", n) + "->" + fmt.Sprintf("nodo%p", n.Der) + "[arrowhead=lvee, color=brown];\n"
+		cadena += fmt.Sprintf("nodo%p", n) + ": <f1>" + "->" + fmt.Sprintf("nodo%p", n.Der) + "[arrowhead=lvee, color=brown];\n"
+	}
+	return cadena
+}
+
+func (arbol *Arbol) TiendaTag(n *NodoArbol) string {
+	var cadena string = fmt.Sprintf("nodo%p", n) + "[label=\"<f0>|{" + "Peso: " + strconv.Itoa(n.Peso) + "|{" +
+		strconv.Itoa(n.Dato) + "|" + n.Contenido.(*Producto).Nombre + "|Q " + fmt.Sprintf("%.2f", n.Contenido.(*Producto).Precio) +
+		"}|Cant.:" + strconv.Itoa(n.Contenido.(*Producto).Cantidad) + "}|<f1>\"];\n"
+	if n.Der == nil && n.Izq == nil {
+		return cadena
+	}
+	if n.Izq != nil {
+		cadena += arbol.TiendaTag(n.Izq)
+		cadena += fmt.Sprintf("nodo%p", n) + ": <f0>" + "->" + fmt.Sprintf("nodo%p", n.Izq) + "[arrowhead=rvee, color=brown];\n"
+	}
+	if n.Der != nil {
+		cadena += arbol.TiendaTag(n.Der)
+		cadena += fmt.Sprintf("nodo%p", n) + ": <f1>" + "->" + fmt.Sprintf("nodo%p", n.Der) + "[arrowhead=lvee, color=brown];\n"
 	}
 	return cadena
 }
@@ -214,7 +232,11 @@ func (nodo *NodoArbol) GetDato(meses bool) string {
 func (arbol *Arbol) Graficar(meses bool) string {
 	if arbol.raiz != nil {
 		archivo := "digraph G{\nnode[shape=Mrecord, color=\"#00bf0d\"];\nrankdir=TD;\n"
-		archivo += arbol.GetTag(arbol.raiz, meses)
+		if reflect.TypeOf(arbol.raiz.Contenido).String() == "*estructuras.Producto" {
+			archivo += arbol.TiendaTag(arbol.raiz)
+		} else {
+			archivo += arbol.GetTag(arbol.raiz, meses)
+		}
 		archivo += "}"
 		return archivo
 	} else {
