@@ -120,6 +120,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	var busqueda *estructuras.RequestFind
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
+		json.NewEncoder(w).Encode(nil)
 		fmt.Fprintf(w, "No_Jaló_:c")
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -127,6 +128,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
+		json.NewEncoder(w).Encode(nil)
 	} else {
 		var tienda *estructuras.Tienda = nodo.Contenido.(*estructuras.NodoTienda).Tienda
 		json.NewEncoder(w).Encode(tienda)
@@ -227,6 +229,35 @@ func eliminarPosicion(request *estructuras.DeleteReq) *estructuras.Tienda {
 		}
 	}
 	return vectorDatos[calcularPos(fila, columna, request.Calificacion)].Eliminar(request.Nombre)
+}
+
+func getTiendas(w http.ResponseWriter, r *http.Request) {
+	var file estructuras.Archivo = estructuras.Archivo{}
+	if len(vectorDatos) == 0 {
+		file.Datos = make([]*estructuras.Dato, 0)
+	} else {
+		var pos int = 0
+		for i := 0; i < len(indices); i++ {
+			file.Datos = append(file.Datos, &estructuras.Dato{Indice: indices[i]})
+			for j := 0; j < len(nombresDep); j++ {
+				file.Datos[i].Departamentos = append(file.Datos[i].Departamentos, &estructuras.Departamento{Nombre: nombresDep[j]})
+			}
+		}
+		for i := 0; i < len(file.Datos[0].Departamentos); i++ {
+			for j := 0; j < len(file.Datos); j++ {
+				for k := 0; k < 5; k++ {
+					file.Datos[j].Departamentos[i].Tiendas = append(file.Datos[j].Departamentos[i].Tiendas, *vectorDatos[pos+k].ToArray()...)
+				}
+				pos += 5
+				if len(file.Datos[j].Departamentos[i].Tiendas) == 0 {
+					file.Datos[j].Departamentos[i].Tiendas = make([]*estructuras.Tienda, 0)
+				}
+			}
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(file)
 }
 
 func guardar(w http.ResponseWriter, r *http.Request) {
@@ -520,10 +551,11 @@ func main() {
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
 	router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
-	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("POST")
+	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("GET")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
 	router.HandleFunc("/guardar", guardar).Methods("GET")
+	router.HandleFunc("/getTiendas", getTiendas).Methods("GET")
 	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
 	router.HandleFunc("/GetArbolAnio", getArbolAnio).Methods("GET")
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
