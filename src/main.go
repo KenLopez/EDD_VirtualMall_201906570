@@ -13,6 +13,7 @@ import (
 
 	"./estructuras"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 var indices, nombresDep []string
@@ -256,7 +257,6 @@ func getTiendas(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(file)
 }
 
@@ -514,6 +514,39 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getInventario(w http.ResponseWriter, r *http.Request) {
+	var busqueda *estructuras.RequestFind
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode(nil)
+		fmt.Fprintf(w, "No_Jaló_:c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &busqueda)
+	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	if nodo == nil {
+		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
+		json.NewEncoder(w).Encode(nil)
+	} else {
+		var inventario []*estructuras.Producto
+		if nodo.Contenido.(*estructuras.NodoTienda).Inventario != nil {
+			inventario = nodo.Contenido.(*estructuras.NodoTienda).Inventario.ToArrayProductos()
+		} else {
+			inventario = make([]*estructuras.Producto, 0)
+		}
+		res := struct {
+			Descripcion string
+			Contacto    string
+			Productos   []*estructuras.Producto
+		}{
+			Descripcion: nodo.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion,
+			Contacto:    nodo.Contenido.(*estructuras.NodoTienda).Tienda.Contacto,
+			Productos:   inventario,
+		}
+		json.NewEncoder(w).Encode(res)
+	}
+}
+
 func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 	var busqueda *estructuras.RequestFind
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -562,5 +595,12 @@ func main() {
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
 	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("GET")
-	log.Fatal(http.ListenAndServe(":3000", router))
+	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(router)
+	log.Fatal(http.ListenAndServe(":3000", handler))
 }

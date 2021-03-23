@@ -1,6 +1,6 @@
 import React from 'react'
 
-function CargarProducto() {
+function CarritoCompra() {
     return (
         <div>
             
@@ -8,4 +8,4 @@ function CargarProducto() {
     )
 }
 
-export default CargarProducto
+export default CarritoCompra

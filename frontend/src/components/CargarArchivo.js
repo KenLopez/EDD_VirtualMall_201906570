@@ -1,6 +1,6 @@
 import React from 'react'
 
-function CargarPedido() {
+function CargarArchivo() {
     return (
         <div>
             
@@ -8,4 +8,4 @@ function CargarPedido() {
     )
 }
 
-export default CargarPedido
+export default CargarArchivo

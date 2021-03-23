@@ -243,3 +243,19 @@ func (arbol *Arbol) Graficar(meses bool) string {
 		return ""
 	}
 }
+
+func (arbol *Arbol) ToArrayProductos() []*Producto {
+	return toArrayProductos(arbol.raiz)
+}
+
+func toArrayProductos(raiz *NodoArbol) []*Producto {
+	var array []*Producto
+	if raiz == nil {
+		array = make([]*Producto, 0)
+	} else {
+		array = append(array, toArrayProductos(raiz.Der)...)
+		array = append(array, raiz.Contenido.(*Producto))
+		array = append(array, toArrayProductos(raiz.Izq)...)
+	}
+	return array
+}
