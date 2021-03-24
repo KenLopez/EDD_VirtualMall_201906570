@@ -16,11 +16,12 @@
     "react-scripts": "4.0.3",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^2.0.3",
+    "use-file-picker": "^0.2.1",
     "viz.js": "^2.1.2",
     "web-vitals": "^1.1.1"
   },
   "scripts": {
-    "start": "set PORT=4000 && react-scripts --max_old_space_size=4096 start",
+    "start": "set PORT=4000 && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

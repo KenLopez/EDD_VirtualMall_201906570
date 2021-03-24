@@ -17,11 +17,11 @@ function Tienda() {
         async function obtener(){
             if(!req){
                 setreq(true)
-                let res = await axios.post('http://localhost:3000/GetInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) });
+                let res = await axios.post('http://localhost:3000/GetInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
                 //let res2 = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
                 info.push(res.data)
                 //info.push(res2.data)
-                console.log(info);
+                //console.log(info)
                 setDatos(info[0].Productos) 
                 setDescripcion(info[0].Descripcion)
                 setContacto(info[0].Contacto)

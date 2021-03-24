@@ -2,12 +2,12 @@ import React from 'react'
 import {BrowserRouter as Router, Route, Redirect} from 'react-router-dom'
 import {Segment} from 'semantic-ui-react'
 import Home from './components/Home'
-import CargarArchivo from './components/CargarArchivo'
 import Reporte from './components/Reporte'
 import NavBar from './components/NavBar'
 import Tienda from './components/Tienda'
 import CarritoCompra from './components/CarritoCompra'
 import './App.css'
+import Archivos from './components/Archivos'
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
           <Redirect to="/Home" />
         </Route>
         <Route path="/Home" component={Home}/>
-        <Route path="/CargarArchivo" component={CargarArchivo}/>
+        <Route path="/CargarArchivo" component={Archivos}/>
         <Route path="/CarritoCompra" component={CarritoCompra}/>
         <Route path="/Reporte" component={Reporte}/>
         <Route exact path="/Tienda/:Departamento/:Nombre/:Calificacion" component={Tienda}/>

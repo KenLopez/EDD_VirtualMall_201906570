@@ -33,7 +33,7 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &ms)
 	linealizar(ms)
-	fmt.Fprintln(w, "Datos_Guardados")
+	json.NewEncoder(w).Encode("Tiendas Cargadas")
 }
 
 func cargarPedidos(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +84,7 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 	}
 	//arbol := arbolAnios
 	//arbol.Buscar(5)
-	fmt.Fprintln(w, "Pedidos_Cargados")
+	json.NewEncoder(w).Encode("Pedidos Cargados")
 	//json.NewEncoder(w).Encode(ms)
 }
 
@@ -114,7 +114,7 @@ func cargarInventarios(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	fmt.Fprintln(w, "Productos_Cargados")
+	json.NewEncoder(w).Encode("Inventarios Cargados")
 }
 
 func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
