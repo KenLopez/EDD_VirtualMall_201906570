@@ -2,7 +2,7 @@ import {React, useEffect, useState} from 'react'
 import {Icon, Header, Segment} from 'semantic-ui-react'
 const axios = require('axios').default
 
-function CargarArchivo(props) {
+function CargaArchivo(props) {
     const [Archivo, setArchivo] = useState(null)
     useEffect(() => {
         async function cargar(){
@@ -43,4 +43,4 @@ function CargarArchivo(props) {
     )
 }
 
-export default CargarArchivo
+export default CargaArchivo

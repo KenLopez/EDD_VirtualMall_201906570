@@ -1,22 +1,22 @@
 import React from 'react'
-import CargarArchivo from './CargarArchivo'
+import CargaArchivo from './CargaArchivo'
 import '../css/Content.css'
 
-function Archivos() {
+function ArchivosContainer() {
     return (
         <div className="Content">
             <div className="ui segment mosaico container">
-                <CargarArchivo
+                <CargaArchivo
                         Ruta='http://localhost:3000/cargartienda'
                         Title='Cargar Tienda'
                 />
                 <br/>
-                <CargarArchivo
+                <CargaArchivo
                     Ruta='http://localhost:3000/CargarInventarios'
                     Title='Cargar Inventarios'
                 />
                 <br/>
-                <CargarArchivo
+                <CargaArchivo
                     Ruta='http://localhost:3000/CargarPedidos'
                     Title='Cargar Pedidos'
                 />
@@ -25,4 +25,4 @@ function Archivos() {
     )
 }
 
-export default Archivos
+export default ArchivosContainer

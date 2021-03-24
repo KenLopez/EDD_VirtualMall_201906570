@@ -7,7 +7,7 @@ import NavBar from './components/NavBar'
 import Tienda from './components/Tienda'
 import CarritoCompra from './components/CarritoCompra'
 import './App.css'
-import Archivos from './components/Archivos'
+import ArchivosContainer from './components/ArchivosContainer'
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
           <Redirect to="/Home" />
         </Route>
         <Route path="/Home" component={Home}/>
-        <Route path="/CargarArchivo" component={Archivos}/>
+        <Route path="/CargarArchivo" component={ArchivosContainer}/>
         <Route path="/CarritoCompra" component={CarritoCompra}/>
         <Route path="/Reporte" component={Reporte}/>
         <Route exact path="/Tienda/:Departamento/:Nombre/:Calificacion" component={Tienda}/>

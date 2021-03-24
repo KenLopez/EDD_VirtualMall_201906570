@@ -25,7 +25,7 @@ function CartaProducto(props) {
             <Image src={props.Imagen} wrapped ui={false} />
             <Card.Content>
             <Card.Header>{props.Nombre}</Card.Header>
-            <Card.Meta><span className='date'>{props.Codigo}</span></Card.Meta>
+            <Card.Meta><span className='date'>SKU: {props.Codigo}</span></Card.Meta>
             <Card.Description>{props.Descripcion}</Card.Description>
             </Card.Content>
             <Card.Content extra>
