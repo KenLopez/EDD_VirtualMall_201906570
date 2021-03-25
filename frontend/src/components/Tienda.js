@@ -1,6 +1,6 @@
 import {React, useEffect, useState} from 'react'
 import { useParams } from 'react-router'
-import {Segment, Header, Icon, Loader, Image, Grid, Rating} from 'semantic-ui-react'
+import {Segment, Header, Icon, Loader, Image, Grid, Rating, Container} from 'semantic-ui-react'
 import CartaProducto from './CartaProducto'
 import '../css/Content.css'
 const axios = require('axios').default
@@ -13,6 +13,12 @@ function Tienda() {
     //const [Dot, setDot] = useState('')
     const [req, setreq] = useState(false)
     var info = []
+    var tienda = {
+        Nombre:Nombre,
+        Departamento:Departamento,
+        Calificacion:Calificacion,
+    }
+    localStorage.setItem('tienda', JSON.stringify(tienda))
     useEffect(() => {
         async function obtener(){
             if(!req){
@@ -55,7 +61,9 @@ function Tienda() {
                                 <Header.Content>{Contacto}</Header.Content>
                             </Header>
                             <br/>
-                            <center><Header size="medium">{Descripcion}</Header></center>
+                            <Container textAlign="center" className="fluid">
+                                <Header size="medium">{Descripcion}</Header>
+                            </Container>
                     </Segment>
                     <div className="ui three column link cards row">
                         {Datos.map((c,index)=>

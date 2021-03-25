@@ -3,7 +3,59 @@ import { Card, Image, Header, Grid, Button, Icon} from 'semantic-ui-react'
 import "../css/CartaProducto.css"
 
 function CartaProducto(props) {
-    const [Carrito, setCarrito] = useState(1)
+    const [Unidades, setUnidades] = useState(1)
+    const AddCarrito = ()=>{
+        var store = JSON.parse(localStorage.getItem('tienda'))
+        var pedido = {
+            Nombre:props.Nombre,
+            Codigo:props.Codigo,
+            Precio:parseFloat(props.Precio),
+            Imagen:props.Imagen,
+            Cantidad:Unidades
+        }
+        var datos = localStorage.getItem('carrito')
+        if (datos == null|| datos == undefined ) {
+            store = {
+                Nombre: store.Nombre,
+                Departamento: store.Departamento,
+                Calificacion: store.Calificacion,
+                Productos: [pedido]
+            }
+            localStorage.setItem('carrito',JSON.stringify([store]))
+
+        }else{
+            datos = JSON.parse(datos)
+            var guardo = false
+            datos.forEach(dato=>{
+                if (dato.Nombre === store.Nombre && dato.Departamento === store.Departamento && dato.Calificacion === store.Calificacion) {
+                    dato.Productos.forEach(producto => {
+                        if (pedido.Codigo === producto.Codigo) {
+                            producto.Cantidad += pedido.Cantidad
+                            if(producto.Cantidad > parseInt(props.Cantidad)){
+                                producto.Cantidad = parseInt(props.Cantidad)
+                            }
+                            guardo = true
+                        }
+                    })
+                    if (!guardo) {
+                        dato.Productos.push(pedido)
+                        guardo = true
+                    }
+                }
+            })
+            if (!guardo) {
+                store = {
+                    Nombre: store.Nombre,
+                    Departamento: store.Departamento,
+                    Calificacion: store.Calificacion,
+                    Productos: [pedido]
+                }
+                datos.push(store)
+            }
+            localStorage.setItem('carrito',JSON.stringify(datos))
+        }
+        
+    }
     return (
         <Card>
             <Card.Content extra>
@@ -29,32 +81,22 @@ function CartaProducto(props) {
             <Card.Description>{props.Descripcion}</Card.Description>
             </Card.Content>
             <Card.Content extra>
-                <Grid columns={2} relaxed='very' stackable>
-                    <Grid.Column>
-                        <center>
-                            <Button.Group color='blue'>
-                                <Button onClick={()=>{
-                                    if (Carrito>1) {
-                                        setCarrito(Carrito-1)
-                                    }
-                                }}>-</Button>
-                                <Button disabled>{Carrito}</Button>
-                                <Button onClick={()=>{
-                                    if(Carrito<props.Cantidad){
-                                        setCarrito(Carrito+1)
-                                    }
-                                }}>+</Button>
-                            </Button.Group>
-                        </center>
-                    </Grid.Column>
-                    <Grid.Column>
-                        <center>
-                            <Button secondary>
-                                <Icon name='shop' />
-                            </Button>
-                        </center>
-                    </Grid.Column>
-                </Grid>
+            <Button.Group floated="left" color='blue'>
+                <Button onClick={()=>{
+                    if (Unidades>1) {
+                        setUnidades(Unidades-1)
+                    }
+                }}>-</Button>
+                <Button disabled>{Unidades}</Button>
+                <Button onClick={()=>{
+                    if(Unidades<props.Cantidad){
+                        setUnidades(Unidades+1)
+                    }
+                }}>+</Button>
+            </Button.Group>
+            <Button floated="right" color="teal" onClick={AddCarrito}>
+                <Icon name='shop' />
+            </Button>
             </Card.Content>
         </Card>
     )

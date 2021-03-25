@@ -8,7 +8,7 @@ function CargaArchivo(props) {
         async function cargar(){
             if(Archivo!=null|undefined){
                 setArchivo(null)
-                let res = await axios.post(props.Ruta, Archivo);
+                let res = await axios.post(props.Ruta, Archivo)
                 console.log(res)     
             }
         }

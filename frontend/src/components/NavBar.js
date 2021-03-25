@@ -4,7 +4,7 @@ import {Link} from 'react-router-dom'
 import '../css/NavBar.css'
 
 const options=["Home", "Cargar Archivo", "Carrito de Compra", "Reportes"]
-const url=["/Home", "/CargarArchivo", "/CarritoDeCompra", "/Reporte"]
+const url=["/Home", "/CargarArchivo", "/CarritoCompra", "/Reporte"]
 
 function NavBar() {
     const [activo, setactivo] = useState(options[0])

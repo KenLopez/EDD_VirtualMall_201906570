@@ -164,7 +164,7 @@ func (arbol *Arbol) Insertar(contenido interface{}, dato int) {
 		arbol.raiz = insertar(arbol.raiz, dato, contenido, &b)
 	} else {
 		if reflect.TypeOf(nodo.Contenido).String() == "*estructuras.Producto" {
-			nodo.Contenido.(*Producto).Cantidad += contenido.(*Producto).Cantidad
+			nodo.Contenido.(*Producto).Cantidad = contenido.(*Producto).Cantidad
 			//fmt.Println(nodo.Contenido.(*Producto).Nombre + ": " + strconv.Itoa(nodo.Contenido.(*Producto).Cantidad))
 		}
 	}
