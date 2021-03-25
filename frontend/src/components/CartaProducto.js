@@ -56,50 +56,55 @@ function CartaProducto(props) {
         }
         
     }
-    return (
-        <Card>
-            <Card.Content extra>
-                <Grid columns={2} relaxed='very' stackable>
-                    <Grid.Column>
-                        <center>
-                            <Header sub>Precio:</Header>
-                            <span className="Price">Q {props.Precio}</span>
-                        </center>
-                    </Grid.Column>
-                    <Grid.Column>
-                        <center>
-                            <Header sub>Disponibilidad:</Header>
-                            <span>{props.Cantidad}</span>
-                        </center>
-                    </Grid.Column>
-                </Grid>
-            </Card.Content>
-            <Image src={props.Imagen} wrapped ui={false} />
-            <Card.Content>
-            <Card.Header>{props.Nombre}</Card.Header>
-            <Card.Meta><span className='date'>SKU: {props.Codigo}</span></Card.Meta>
-            <Card.Description>{props.Descripcion}</Card.Description>
-            </Card.Content>
-            <Card.Content extra>
-            <Button.Group floated="left" color='blue'>
-                <Button onClick={()=>{
-                    if (Unidades>1) {
-                        setUnidades(Unidades-1)
-                    }
-                }}>-</Button>
-                <Button disabled>{Unidades}</Button>
-                <Button onClick={()=>{
-                    if(Unidades<props.Cantidad){
-                        setUnidades(Unidades+1)
-                    }
-                }}>+</Button>
-            </Button.Group>
-            <Button floated="right" color="teal" onClick={AddCarrito}>
-                <Icon name='shop' />
-            </Button>
-            </Card.Content>
-        </Card>
-    )
+    if (props.Cantidad>0) {
+        return (
+            <Card>
+                <Card.Content extra>
+                    <Grid columns={2} relaxed='very' stackable>
+                        <Grid.Column>
+                            <center>
+                                <Header sub>Precio:</Header>
+                                <span className="Price">Q {props.Precio}</span>
+                            </center>
+                        </Grid.Column>
+                        <Grid.Column>
+                            <center>
+                                <Header sub>Disponibilidad:</Header>
+                                <span>{props.Cantidad}</span>
+                            </center>
+                        </Grid.Column>
+                    </Grid>
+                </Card.Content>
+                <Image src={props.Imagen} wrapped ui={false} />
+                <Card.Content>
+                <Card.Header>{props.Nombre}</Card.Header>
+                <Card.Meta><span className='date'>SKU: {props.Codigo}</span></Card.Meta>
+                <Card.Description>{props.Descripcion}</Card.Description>
+                </Card.Content>
+                <Card.Content extra>
+                <Button.Group floated="left" color='blue'>
+                    <Button onClick={()=>{
+                        if (Unidades>1) {
+                            setUnidades(Unidades-1)
+                        }
+                    }}>-</Button>
+                    <Button disabled>{Unidades}</Button>
+                    <Button onClick={()=>{
+                        if(Unidades<props.Cantidad){
+                            setUnidades(Unidades+1)
+                        }
+                    }}>+</Button>
+                </Button.Group>
+                <Button floated="right" color="teal" onClick={AddCarrito}>
+                    <Icon name='shop' />
+                </Button>
+                </Card.Content>
+            </Card>
+        )
+    }else{
+        return(<></>)
+    }
+    
 }
 
 export default CartaProducto
