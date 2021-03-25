@@ -1,5 +1,5 @@
 import {React, useEffect, useState} from 'react'
-import {Segment, Image, Loader} from 'semantic-ui-react'
+import {Segment, Image, Loader, Header, Icon, Message} from 'semantic-ui-react'
 import MosaicoTienda from './MosaicoTienda'
 import '../css/Content.css'
 const axios = require('axios').default
@@ -39,14 +39,33 @@ function StoreList() {
             </div>
         )    
     }else{
-        return(
-            <div>
-                <Segment>
-                    <Loader active />
-                    <Image src='https://react.semantic-ui.com/images/wireframe/short-paragraph.png' />
-                </Segment>
-            </div>
-        )
+        if (!req) {
+            return(
+                <div>
+                    <Segment>
+                        <Loader active />
+                        <Image src='https://react.semantic-ui.com/images/wireframe/short-paragraph.png' />
+                    </Segment>
+                </div>
+            )   
+        }else{
+            return(
+                <div className="Content">
+                    <div className="ui segment mosaico container">
+                    <Segment>
+                        <Header size="huge">
+                            <Icon name='dollar sign'/>
+                            <Header.Content>Tiendas</Header.Content>
+                        </Header>
+                    </Segment>
+                    <Message>
+                            <Message.Header>No existen tiendas cargadas</Message.Header>
+                            <p>Puedes cargar tiendas en la sección de Cargar Archivo.</p>
+                    </Message>
+                    </div>
+                </div>
+            )
+        }
     }
 }
 

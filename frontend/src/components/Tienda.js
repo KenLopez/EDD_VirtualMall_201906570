@@ -1,6 +1,6 @@
 import {React, useEffect, useState} from 'react'
 import { useParams } from 'react-router'
-import {Segment, Header, Icon, Loader, Image, Grid, Rating, Container} from 'semantic-ui-react'
+import {Segment, Header, Icon, Loader, Image, Grid, Rating, Container, Message} from 'semantic-ui-react'
 import CartaProducto from './CartaProducto'
 import '../css/Content.css'
 const axios = require('axios').default
@@ -61,7 +61,7 @@ function Tienda() {
                                 <Header.Content>{Contacto}</Header.Content>
                             </Header>
                             <br/>
-                            <Container textAlign="center" className="fluid">
+                            <Container textAlign="center" fluid>
                                 <Header size="medium">{Descripcion}</Header>
                             </Container>
                     </Segment>
@@ -79,18 +79,66 @@ function Tienda() {
                             )
                         }
                     </div>
+                    <Segment>
+                        <Header size="large">
+                            Árbol de inventario
+                        </Header>
+                    </Segment>
+                    <Container fluid>
+                        <center>
+                            <Image src={Datos[0].Imagen} size='big'/>
+                        </center>
+                    </Container>
                 </div>
             </div>
         )
     }else{
-        return(
-            <div>
-                <Segment>
-                    <Loader active />
-                    <Image src='https://react.semantic-ui.com/images/wireframe/short-paragraph.png' />
-                </Segment>
-            </div>
-        )
+        if(!req){
+            return(
+                <div>
+                    <Segment>
+                        <Loader active />
+                        <Image src='https://react.semantic-ui.com/images/wireframe/short-paragraph.png' />
+                    </Segment>
+                </div>
+            )
+        }else{
+            return(
+                <div className="Content">
+                    <div className="ui segment mosaico container">
+                        <Segment>
+                                <Grid columns={2} relaxed='very' stackable>
+                                    <Grid.Column>
+                                        <Header size="huge">
+                                            <Icon name='shopping bag'/>
+                                            <Header.Content>{Nombre}</Header.Content>
+                                        </Header>
+                                    </Grid.Column>
+                                    <Grid.Column>
+                                        <Header size="huge" textAlign="right">
+                                            <Header.Content>{Departamento}</Header.Content>
+                                        </Header>
+                                    </Grid.Column>
+                                </Grid>
+                                <Header size="huge">
+                                    <Rating icon='star' defaultRating={Calificacion} maxRating={5} disabled/>
+                                </Header>
+                                <Header size="medium">
+                                    <Header.Content>{Contacto}</Header.Content>
+                                </Header>
+                                <br/>
+                                <Container textAlign="center" className="fluid">
+                                    <Header size="medium">{Descripcion}</Header>
+                                </Container>
+                        </Segment>
+                        <Message>
+                            <Message.Header>Esta tienda no posee inventario</Message.Header>
+                            <p>Puedes cargar inventarios en la sección de Cargar Archivo.</p>
+                        </Message>
+                    </div>
+                </div>
+            )
+        }
     }
 }
 

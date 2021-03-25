@@ -459,11 +459,11 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 			nodoM := arbolM.Buscar(mes)
 			if nodoM != nil {
 				data := []byte(nodoM.Contenido.(*estructuras.Matriz).Graficar(estructuras.GetMesName(nodoM.Dato)))
-				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".dot", data, 0644)
+				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".dot", data, 0644)
 				path, _ := exec.LookPath("dot")
-				cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".dot").Output()
-				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+".pdf", cmd, os.FileMode(0777))
-				e := os.Remove("Pedidos-" + estructuras.GetMesName(nodoM.Dato) + ".dot")
+				cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".dot").Output()
+				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".pdf", cmd, os.FileMode(0777))
+				e := os.Remove("Pedidos-" + estructuras.GetMesName(nodoM.Dato) + "-" + strconv.Itoa(anio) + ".dot")
 				if e != nil {
 					log.Fatal(e)
 				}
@@ -481,7 +481,7 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	anio, err1 := strconv.Atoi(vars["anio"])
 	mes, err2 := strconv.Atoi(vars["mes"])
-	categoria := strings.ReplaceAll(vars["categoria"], "_", " ")
+	categoria := vars["categoria"]
 	dia, err4 := strconv.Atoi(vars["dia"])
 	if err1 != nil || err2 != nil || err4 != nil {
 		fmt.Fprintf(w, "Error")
@@ -495,11 +495,11 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
 				if cola != nil {
 					data := []byte(cola.GraficarPedidos())
-					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".dot", data, 0644)
+					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot", data, 0644)
 					path, _ := exec.LookPath("dot")
-					cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".dot").Output()
-					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+".pdf", cmd, os.FileMode(0777))
-					e := os.Remove("Pedidos-" + categoria + "-" + strconv.Itoa(dia) + ".dot")
+					cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot").Output()
+					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".pdf", cmd, os.FileMode(0777))
+					e := os.Remove("Pedidos-" + categoria + "-" + strconv.Itoa(dia) + strconv.Itoa(mes) + strconv.Itoa(anio) + ".dot")
 					if e != nil {
 						log.Fatal(e)
 					}
@@ -564,12 +564,13 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 			data := []byte(nodo.Contenido.(*estructuras.NodoTienda).Inventario.Graficar(false))
 			_ = ioutil.WriteFile(title+".dot", data, 0644)
 			path, _ := exec.LookPath("dot")
-			cmd, _ := exec.Command(path, "-Tpdf", title+".dot").Output()
-			_ = ioutil.WriteFile(title+".pdf", cmd, os.FileMode(0777))
+			cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+			_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
 			e := os.Remove(title + ".dot")
 			if e != nil {
 				log.Fatal(e)
 			}
+
 			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 		} else {
 			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
@@ -594,7 +595,7 @@ func main() {
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
-	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("GET")
+	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("POST")
 	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
