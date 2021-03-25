@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -570,8 +572,11 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 			if e != nil {
 				log.Fatal(e)
 			}
-
-			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+			f, _ := os.Open(title + ".png")
+			reader := bufio.NewReader(f)
+			content, _ := ioutil.ReadAll(reader)
+			encoded := base64.StdEncoding.EncodeToString(content)
+			json.NewEncoder(w).Encode(encoded)
 		} else {
 			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
 		}

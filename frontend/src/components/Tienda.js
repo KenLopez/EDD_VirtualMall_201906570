@@ -10,6 +10,7 @@ function Tienda() {
     const [Datos, setDatos] = useState([])
     const [Descripcion, setDescripcion] = useState('')
     const [Contacto, setContacto] = useState('')
+    const [data, setData] = useState('')
     //const [Dot, setDot] = useState('')
     const [req, setreq] = useState(false)
     var info = []
@@ -24,13 +25,16 @@ function Tienda() {
             if(!req){
                 setreq(true)
                 let res = await axios.post('http://localhost:3000/GetInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
-                //let res2 = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
                 info.push(res.data)
                 //info.push(res2.data)
                 //console.log(info)
                 setDatos(info[0].Productos) 
                 setDescripcion(info[0].Descripcion)
                 setContacto(info[0].Contacto)
+                if (info.length>0) {
+                    let res2 = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
+                    setData("data:image/png;base64,"+res2.data)   
+                }
                 //setDot(info[1])             
             }
         }
@@ -86,7 +90,7 @@ function Tienda() {
                     </Segment>
                     <Container fluid>
                         <center>
-                            <Image src={Datos[0].Imagen} size='big'/>
+                            <Image src={data} size='massive'/>
                         </center>
                     </Container>
                 </div>
