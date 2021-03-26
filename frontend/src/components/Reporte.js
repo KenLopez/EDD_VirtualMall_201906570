@@ -89,7 +89,7 @@ function Reporte() {
             let res = await axios.get('http://localhost:3000/GetPedidosDia/'+year+'/'+month+'/'+cat+'/'+day)
             if (res.data.Tipo !== "Error"){
                 setImagen("data:image/png;base64,"+res.data.Content)
-                setTitle('Matriz Pedidos')
+                setTitle('Cola de Pedidos')
             }
         }
         obtener()
