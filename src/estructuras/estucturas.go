@@ -1,5 +1,51 @@
 package estructuras
 
+import (
+	"strconv"
+	"strings"
+)
+
+type ArchivoInventario struct {
+	Inventarios []*Inventario `json:Inventarios`
+}
+
+type ArchivoPedido struct {
+	Pedidos []*Pedido `json:Pedidos`
+}
+
+type Pedido struct {
+	Fecha        string    `json:Fecha`
+	Tienda       string    `json:Tienda`
+	Departamento string    `json:Departamento`
+	Calificacion int       `json:Calificacion`
+	Productos    []*Codigo `json:Productos`
+}
+
+type Codigo struct {
+	Codigo int `json:Codigo`
+}
+
+type Response struct {
+	Tipo    string `json:Tipo`
+	Content string `json:Content`
+}
+
+type Inventario struct {
+	Tienda       string      `json:Tienda`
+	Departamento string      `json:Departamento`
+	Calificacion int         `json:Calificacion`
+	Productos    []*Producto `json:Productos`
+}
+
+type Producto struct {
+	Nombre      string  `json:Nombre`
+	Codigo      int     `json:Codigo`
+	Descripcion string  `json:Descripcion`
+	Precio      float32 `json:Precio`
+	Cantidad    int     `json:Cantidad`
+	Imagen      string  `json:Imagen`
+}
+
 type DeleteReq struct {
 	Nombre       string `json:Nombre`
 	Categoria    string `json:Categoria`
@@ -31,176 +77,65 @@ type Tienda struct {
 	Descripcion  string `json:Descripcion`
 	Contacto     string `json:Contacto`
 	Calificacion int    `json:Calificacion`
-}
-
-type Nodo struct {
-	Tienda     *Tienda
-	Next, Prev *Nodo
-}
-
-type Lista struct {
-	First, Last *Nodo
-	Size        int
+	Logo         string `json:Logo`
 }
 
 func NewTienda() *Tienda {
-	return &Tienda{"", "", "", 0}
+	return &Tienda{"", "", "", 0, ""}
 }
 
-func NewNodo(tienda *Tienda) *Nodo {
-	return &Nodo{tienda, nil, nil}
-}
-
-func NewLista() *Lista {
-	return &Lista{nil, nil, 0}
-}
-
-func (this *Lista) Buscar(tienda string) *Tienda {
-	if this.Size == 0 {
-		return nil
-	} else {
-		aux := this.First
-		for i := 0; i < this.Size; i++ {
-			if aux.Tienda.Nombre == tienda {
-				return aux.Tienda
-			}
-			aux = aux.Next
-		}
-		return nil
-	}
-}
-
-func (this *Lista) Eliminar(tienda string) *Tienda {
-	if this.Size == 0 {
-		return nil
-	} else {
-		aux := this.First
-		for i := 0; i < this.Size; i++ {
-			if aux.Tienda.Nombre == tienda {
-				if i == 0 {
-					if this.Size == 1 {
-						this.First = nil
-						this.Last = nil
-						this.Size--
-						return aux.Tienda
-					} else {
-						this.First.Next.Prev = nil
-						this.First = this.First.Next
-						this.Size--
-						return aux.Tienda
-					}
-				} else if i == this.Size-1 {
-					aux.Prev.Next = nil
-					this.Last = aux.Prev
-					this.Size--
-					return aux.Tienda
-				} else {
-					aux.Prev.Next = aux.Next
-					aux.Next.Prev = aux.Prev
-					this.Size--
-					return aux.Tienda
-				}
-			}
-			aux = aux.Next
-		}
-		return nil
-	}
-}
-
-func (this *Lista) InsertarInicio(nuevo *Nodo) {
-	nuevo.Next = this.First
-	this.First.Prev = nuevo
-	this.First = nuevo
-}
-
-func (this *Lista) InsertarFinal(nuevo *Nodo) {
-	this.Last.Next = nuevo
-	nuevo.Prev = this.Last
-	this.Last = nuevo
-}
-
-func (this *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
-	nuevo.Next = aux
-	nuevo.Prev = aux.Prev
-	aux.Prev.Next = nuevo
-	aux.Prev = nuevo
-}
-
-func (this *Tienda) GetAscii() int {
+func GetAscii(cadena string) int {
 	var ascii int
-	runes := []rune(this.Nombre)
-	for i := 0; i < len(runes); i++ {
-		ascii += int(runes[i])
+	for i := 0; i < len(cadena); i++ {
+		ascii += int(cadena[i])
 	}
 	return ascii
 }
 
-func (this *Lista) Insertar(nuevo *Nodo) {
-	this.Size++
-	runes1 := []rune(nuevo.Tienda.Nombre)
-	ascii1 := 0
-	for i := 0; i < len(runes1); i++ {
-		ascii1 += int(runes1[i])
-	}
-	if this.Size-1 == 0 {
-		this.First = nuevo
-		this.Last = nuevo
-		return
-	}
-	runes2 := []rune(this.First.Tienda.Nombre)
-	ascii2 := 0
-	for i := 0; i < len(runes2); i++ {
-		ascii2 += int(runes2[i])
-	}
-	if this.Size-1 == 1 {
-		if ascii1 < ascii2 {
-			this.InsertarInicio(nuevo)
-			return
-		}
-		this.InsertarFinal(nuevo)
-		return
-	}
-	var aux *Nodo = this.First
-	for i := 0; i < this.Size-1; i++ {
-		ascii2 = 0
-		runes2 := []rune(aux.Tienda.Nombre)
-		for j := 0; j < len(runes2); j++ {
-			ascii2 += int(runes2[j])
-		}
-		if ascii1 < ascii2 {
-			if i == 0 {
-				this.InsertarInicio(nuevo)
-				return
-			}
-			this.InsertarEntre(nuevo, aux)
-			return
-		}
-		if i == this.Size-2 {
-			this.InsertarFinal(nuevo)
-			return
-		}
-		aux = aux.Next
-	}
+func GetDia(fecha string) int {
+	a := strings.Split(fecha, "-")[0]
+	b, _ := strconv.Atoi(a)
+	return b
 }
 
-func (this *Lista) ToString() string {
-	var cadena string
-	aux := this.First
-	for i := 0; i < this.Size; i++ {
-		cadena += aux.Tienda.Nombre + "\n"
-		aux = aux.Next
-	}
-	return cadena
+func GetAnio(fecha string) int {
+	a := strings.Split(fecha, "-")[2]
+	b, _ := strconv.Atoi(a)
+	return b
 }
 
-func (this *Lista) ToArray() *[]*Tienda {
-	var array []*Tienda
-	if this.Size != 0 {
-		var aux *Nodo = this.First
-		for i := 0; i < this.Size; i++ {
-			array = append(array, aux.Tienda)
-			aux = aux.Next
-		}
+func GetMes(fecha string) int {
+	a := strings.Split(fecha, "-")[1]
+	b, _ := strconv.Atoi(a)
+	return b
+}
+
+func GetMesName(numero int) string {
+	switch numero {
+	case 1:
+		return "ENERO"
+	case 2:
+		return "FEBRERO"
+	case 3:
+		return "MARZO"
+	case 4:
+		return "ABRIL"
+	case 5:
+		return "MAYO"
+	case 6:
+		return "JUNIO"
+	case 7:
+		return "JULIO"
+	case 8:
+		return "AGOSTO"
+	case 9:
+		return "SEPTIEMBRE"
+	case 10:
+		return "OCTUBRE"
+	case 11:
+		return "NOVIEMBRE"
+	case 12:
+		return "DICIEMBRE"
 	}
-	return &array
+	return "ERROR"
 }
