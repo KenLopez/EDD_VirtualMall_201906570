@@ -372,15 +372,19 @@ func getArbolAnio(w http.ResponseWriter, r *http.Request) {
 		data := []byte(arbolAnios.Graficar(false))
 		_ = ioutil.WriteFile("Arbol-Anios.dot", data, 0644)
 		path, _ := exec.LookPath("dot")
-		cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Anios.dot").Output()
-		_ = ioutil.WriteFile("Arbol-Anios.pdf", cmd, os.FileMode(0777))
+		cmd, _ := exec.Command(path, "-Tpng", "Arbol-Anios.dot").Output()
+		_ = ioutil.WriteFile("Arbol-Anios.png", cmd, os.FileMode(0777))
 		e := os.Remove("Arbol-Anios.dot")
 		if e != nil {
 			log.Fatal(e)
 		}
-		fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+		f, _ := os.Open("Arbol-Anios.png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
 	} else {
-		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	}
 
 }
@@ -425,24 +429,29 @@ func getArbolMeses(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	numero, err := strconv.Atoi(vars["anio"])
 	if err != nil {
-		fmt.Fprintf(w, "Error")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else if arbolAnios == nil {
-		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else {
-		arbol := arbolAnios.Buscar(numero).Contenido.(*estructuras.Arbol)
+		a := arbolAnios.Buscar(numero)
+		arbol := a.Contenido.(*estructuras.Arbol)
 		if arbol != nil {
 			data := []byte(arbol.Graficar(true))
 			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".dot", data, 0644)
 			path, _ := exec.LookPath("dot")
-			cmd, _ := exec.Command(path, "-Tpdf", "Arbol-Meses-"+strconv.Itoa(numero)+".dot").Output()
-			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".pdf", cmd, os.FileMode(0777))
+			cmd, _ := exec.Command(path, "-Tpng", "Arbol-Meses-"+strconv.Itoa(numero)+".dot").Output()
+			_ = ioutil.WriteFile("Arbol-Meses-"+strconv.Itoa(numero)+".png", cmd, os.FileMode(0777))
 			e := os.Remove("Arbol-Meses-" + strconv.Itoa(numero) + ".dot")
 			if e != nil {
 				log.Fatal(e)
 			}
-			fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+			f, _ := os.Open("Arbol-Meses-" + strconv.Itoa(numero) + ".png")
+			reader := bufio.NewReader(f)
+			content, _ := ioutil.ReadAll(reader)
+			encoded := base64.StdEncoding.EncodeToString(content)
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
 		} else {
-			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 		}
 	}
 }
@@ -452,10 +461,8 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 	anio, err1 := strconv.Atoi(vars["anio"])
 	mes, err2 := strconv.Atoi(vars["mes"])
 	if err1 != nil || err2 != nil {
-		fmt.Fprintf(w, "Error")
-	} else if arbolAnios == nil {
-		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
-	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else if arbolAnios != nil {
 		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
 		if arbolM != nil {
 			nodoM := arbolM.Buscar(mes)
@@ -463,19 +470,25 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 				data := []byte(nodoM.Contenido.(*estructuras.Matriz).Graficar(estructuras.GetMesName(nodoM.Dato)))
 				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".dot", data, 0644)
 				path, _ := exec.LookPath("dot")
-				cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".dot").Output()
-				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".pdf", cmd, os.FileMode(0777))
+				cmd, _ := exec.Command(path, "-Tpng", "Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".dot").Output()
+				_ = ioutil.WriteFile("Pedidos-"+estructuras.GetMesName(nodoM.Dato)+"-"+strconv.Itoa(anio)+".png", cmd, os.FileMode(0777))
 				e := os.Remove("Pedidos-" + estructuras.GetMesName(nodoM.Dato) + "-" + strconv.Itoa(anio) + ".dot")
 				if e != nil {
 					log.Fatal(e)
 				}
-				fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+				f, _ := os.Open("Pedidos-" + estructuras.GetMesName(nodoM.Dato) + "-" + strconv.Itoa(anio) + ".png")
+				reader := bufio.NewReader(f)
+				content, _ := ioutil.ReadAll(reader)
+				encoded := base64.StdEncoding.EncodeToString(content)
+				json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
 			} else {
-				fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+				json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 			}
 		} else {
-			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 		}
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	}
 }
 
@@ -486,9 +499,9 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 	categoria := vars["categoria"]
 	dia, err4 := strconv.Atoi(vars["dia"])
 	if err1 != nil || err2 != nil || err4 != nil {
-		fmt.Fprintf(w, "Error")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else if arbolAnios == nil {
-		fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else {
 		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
 		if arbolM != nil {
@@ -499,19 +512,25 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 					data := []byte(cola.GraficarPedidos())
 					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot", data, 0644)
 					path, _ := exec.LookPath("dot")
-					cmd, _ := exec.Command(path, "-Tpdf", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot").Output()
-					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".pdf", cmd, os.FileMode(0777))
+					cmd, _ := exec.Command(path, "-Tpng", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot").Output()
+					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".png", cmd, os.FileMode(0777))
 					e := os.Remove("Pedidos-" + categoria + "-" + strconv.Itoa(dia) + strconv.Itoa(mes) + strconv.Itoa(anio) + ".dot")
 					if e != nil {
 						log.Fatal(e)
 					}
-					fmt.Fprintf(w, "Ya_Está_La_Gráfica")
+					f, _ := os.Open("Pedidos-" + categoria + "-" + strconv.Itoa(dia) + strconv.Itoa(mes) + strconv.Itoa(anio) + ".png")
+					reader := bufio.NewReader(f)
+					content, _ := ioutil.ReadAll(reader)
+					encoded := base64.StdEncoding.EncodeToString(content)
+					json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+				} else {
+					json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 				}
 			} else {
-				fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+				json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 			}
 		} else {
-			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 		}
 	}
 }

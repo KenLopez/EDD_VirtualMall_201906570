@@ -25,6 +25,11 @@ type Codigo struct {
 	Codigo int `json:Codigo`
 }
 
+type Response struct {
+	Tipo    string `json:Tipo`
+	Content string `json:Content`
+}
+
 type Inventario struct {
 	Tienda       string      `json:Tienda`
 	Departamento string      `json:Departamento`
