@@ -154,7 +154,7 @@ func (matriz *Matriz) crearHorizontal(dato int) *NodoCabeceraHorizontal {
 		return nueva
 	}
 	for aux.(*NodoCabeceraHorizontal).Este != nil {
-		if dato > aux.(*NodoCabeceraHorizontal).Dato && dato <= aux.(*NodoCabeceraHorizontal).Sur.(*NodoCabeceraHorizontal).Dato {
+		if dato > aux.(*NodoCabeceraHorizontal).Dato && dato <= aux.(*NodoCabeceraHorizontal).Este.(*NodoCabeceraHorizontal).Dato {
 			nueva := &NodoCabeceraHorizontal{
 				Este:  nil,
 				Oeste: nil,
@@ -226,11 +226,12 @@ func (matriz *Matriz) obtenerUltimoH(cabecera *NodoCabeceraVertical, dato int) i
 func (matriz *Matriz) Get(dia int, categoria string) *NodoMatriz {
 	cabecera := matriz.getVertical(categoria)
 	if cabecera != nil {
-		aux := cabecera.(*NodoCabeceraVertical).Este
+		aux := cabecera.(*NodoCabeceraVertical).Este.(*NodoMatriz)
 		for aux != nil {
-			if GetDia(aux.(*NodoMatriz).Dato.Frente.Contenido.(*Pedido).Fecha) == dia {
-				return aux.(*NodoMatriz)
+			if GetDia(aux.Dato.Frente.Contenido.(*Pedido).Fecha) == dia {
+				return aux
 			}
+			aux = aux.Este.(*NodoMatriz)
 		}
 	}
 	return nil
@@ -286,7 +287,7 @@ func (matriz *Matriz) Graficar(nombre string) string {
 			for aux != nil {
 				nodos += fmt.Sprintf("nodo%p", aux) + "[color=brown, style=filled, fillcolor=beige label=\"\"]\n"
 				if aux.(*NodoMatriz).Este != nil {
-					rango = fmt.Sprintf("nodo%p", actualV) + "--" + fmt.Sprintf("nodo%p", actualV.(*NodoCabeceraVertical).Este) + "\n"
+					rango += fmt.Sprintf("nodo%p", aux) + "--" + fmt.Sprintf("nodo%p", aux.(*NodoMatriz).Este) + "\n"
 				}
 				if aux.(*NodoMatriz).Sur != nil {
 					conexionesV += fmt.Sprintf("nodo%p", aux) + "--" + fmt.Sprintf("nodo%p", aux.(*NodoMatriz).Sur) + "\n"
