@@ -128,6 +128,7 @@ func insertar(raiz *NodoArbol, dato int, contenido interface{}, hc *bool) *NodoA
 					raiz = rotarID(raiz)
 				}
 				*hc = false
+				break
 			}
 		}
 	} else if dato >= raiz.Dato {

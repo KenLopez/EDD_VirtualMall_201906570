@@ -40,8 +40,7 @@ func (cola *Cola) Dequeue() *Nodo {
 
 func (cola *Cola) GraficarPedidos() string {
 	var listas, nodos, conexionesC, conexionesP string
-	var numCluster int
-	numCluster = 1
+	var numCluster int = 1
 	nodos = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
 		"style=invis;\nedge[minlen=0.1, dir=fordware]\n"
 	nodos += "inicio[shape=Mrecord,color=blue, label=\"PEDIDOS\\n" + cola.Frente.Contenido.(*Pedido).Fecha + "\\n" + cola.Frente.Contenido.(*Pedido).Departamento + "\"]\n"
