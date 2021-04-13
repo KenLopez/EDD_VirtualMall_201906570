@@ -1,5 +1,10 @@
 package estructuras
 
+import (
+	"fmt"
+	"strconv"
+)
+
 type Key struct {
 	Valor int
 	Izq   *NodoB
@@ -237,4 +242,51 @@ func rebalancear(nodo *NodoB) {
 			nodo.insertKey(mover)
 		}
 	}
+}
+
+func (nodo *NodoB) getTag(cifrado int) string {
+	str := fmt.Sprintf("nodo%p", nodo) + "[label=\""
+	hijos := ""
+	links := ""
+	mid := ""
+	llaves := nodo.CountKeys()
+	for i := 0; i <= llaves; i++ {
+		if i < llaves {
+			if cifrado == 0 {
+				if i == llaves/2 {
+					mid = "<mid>"
+				} else {
+					mid = ""
+				}
+				str += "<f" + strconv.Itoa(i) + ">|{{" + mid + strconv.Itoa(nodo.Keys[i].Valor) + "}|{" + nodo.Keys[i].Dato.(*Usuario).Correo + "}|{" + nodo.Keys[i].Dato.(*Usuario).Nombre + "|" +
+					nodo.Keys[i].Dato.(*Usuario).Password + "}|" + nodo.Keys[i].Dato.(*Usuario).Cuenta + "}|"
+			}
+			if nodo.Keys[i].Izq != nil {
+				hijos += nodo.Keys[i].Izq.getTag(cifrado)
+				llavesH := nodo.Keys[i].Izq.CountKeys()
+				if llavesH%2 != 0 {
+					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i].Izq) + ":<mid>\n"
+				} else {
+					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i].Izq) + ":" + "<f" + strconv.Itoa(llavesH/2) + ">\n"
+				}
+			}
+		} else {
+			str += "<f" + strconv.Itoa(i) + ">\"]\n"
+			if nodo.Keys[i-1].Der != nil {
+				hijos += nodo.Keys[i-1].Der.getTag(cifrado)
+				llavesH := nodo.Keys[i-1].Der.CountKeys()
+				if llavesH%2 != 0 {
+					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i-1].Der) + ":<mid>\n"
+				} else {
+					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i-1].Der) + ":" + "<f" + strconv.Itoa(llavesH/2) + ">\n"
+				}
+
+			}
+		}
+	}
+	return str + hijos + links
+}
+
+func (arbol *ArbolB) Graficar(cifrado int) string {
+	return "digraph G{\nnode [shape=Mrecord, color=purple]\n" + arbol.Raiz.getTag(cifrado) + "}"
 }

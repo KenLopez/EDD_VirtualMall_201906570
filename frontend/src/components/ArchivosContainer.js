@@ -20,6 +20,11 @@ function ArchivosContainer() {
                     Ruta='http://localhost:3000/CargarPedidos'
                     Title='Cargar Pedidos'
                 />
+                <br/>
+                <CargaArchivo
+                    Ruta='http://localhost:3000/CargarPedidos'
+                    Title='Cargar Usuarios'
+                />
             </div>
         </div>
     )

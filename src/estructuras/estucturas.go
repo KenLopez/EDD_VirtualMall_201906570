@@ -5,6 +5,18 @@ import (
 	"strings"
 )
 
+type ArchivoUsuarios struct {
+	Usuarios []*Usuario `json:Usuarios`
+}
+
+type Usuario struct {
+	Dpi      int    `json:Dpi`
+	Nombre   string `json:Nombre`
+	Correo   string `json:Correo`
+	Password string `json:Password`
+	Cuenta   string `json:Cuenta`
+}
+
 type ArchivoInventario struct {
 	Inventarios []*Inventario `json:Inventarios`
 }
@@ -19,6 +31,7 @@ type Pedido struct {
 	Departamento string    `json:Departamento`
 	Calificacion int       `json:Calificacion`
 	Productos    []*Codigo `json:Productos`
+	//Usuario      string    `json:Usuario`
 }
 
 type Codigo struct {
@@ -44,6 +57,7 @@ type Producto struct {
 	Precio      float32 `json:Precio`
 	Cantidad    int     `json:Cantidad`
 	Imagen      string  `json:Imagen`
+	//Almacenamiento string `json:Almacenamiento`
 }
 
 type DeleteReq struct {

@@ -21,6 +21,7 @@ import (
 var indices, nombresDep []string
 var vectorDatos []*estructuras.Lista
 var arbolAnios *estructuras.Arbol
+var arbolCuentas *estructuras.ArbolB = estructuras.NewArbolB(5)
 
 func inicial(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "A_tus_órdenes,_capitán... :D")
@@ -36,6 +37,20 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &ms)
 	linealizar(ms)
 	json.NewEncoder(w).Encode("Tiendas Cargadas")
+}
+
+func cargarUsuarios(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoUsuarios
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_ :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	for i := 0; i < len(ms.Usuarios); i++ {
+		arbolCuentas.Insertar(estructuras.NewKey(ms.Usuarios[i].Dpi, ms.Usuarios[i]))
+	}
+	json.NewEncoder(w).Encode("Usuarios Cargados")
 }
 
 func cargarPedidos(w http.ResponseWriter, r *http.Request) {
@@ -389,6 +404,29 @@ func getArbolAnio(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cifrado, err := strconv.Atoi(vars["cifrado"])
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		data := []byte(arbolCuentas.Graficar(cifrado))
+		_ = ioutil.WriteFile("Arbol-Cuentas.dot", data, 0644)
+		path, _ := exec.LookPath("dot")
+		cmd, _ := exec.Command(path, "-Tpng", "Arbol-Cuentas.dot").Output()
+		_ = ioutil.WriteFile("Arbol-Cuentas.png", cmd, os.FileMode(0777))
+		e := os.Remove("Arbol-Cuentas.dot")
+		if e != nil {
+			log.Fatal(e)
+		}
+		f, _ := os.Open("Arbol-Cuentas.png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+	}
+}
+
 func linealizar(ms *estructuras.Archivo) {
 	var vector []*estructuras.Lista
 	var letras []string
@@ -604,11 +642,19 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	arbolCuentas.Insertar(estructuras.NewKey(1234567890101, &estructuras.Usuario{
+		Dpi:      1234567890101,
+		Nombre:   "EDD2021",
+		Correo:   "auxiliar@edd.com",
+		Password: "1234",
+		Cuenta:   "Admin",
+	}))
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
 	router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
+	router.HandleFunc("/CargarUsuarios", cargarUsuarios).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("GET")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
@@ -620,6 +666,7 @@ func main() {
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
 	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("POST")
+	router.HandleFunc("/GetArbolCuentas/{cifrado}", getArbolCuentas).Methods("GET")
 	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
