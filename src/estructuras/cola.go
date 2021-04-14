@@ -38,7 +38,7 @@ func (cola *Cola) Dequeue() *Nodo {
 	return nodo
 }
 
-func (cola *Cola) GraficarPedidos() string {
+func (cola *Cola) GraficarPedidos(arbol *ArbolB) string {
 	var listas, nodos, conexionesC, conexionesP string
 	var numCluster int = 1
 	nodos = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
@@ -49,7 +49,14 @@ func (cola *Cola) GraficarPedidos() string {
 	listas = ""
 	conexionesP = ""
 	for aux != nil {
-		nodos += fmt.Sprintf("nodo%p", aux) + "[shape=Mrecord, color=blue,label=\"{" + aux.Contenido.(*Pedido).Tienda + "|" + "Calif.: " + strconv.Itoa(aux.Contenido.(*Pedido).Calificacion) + "*}\"]\n"
+		nodos += fmt.Sprintf("nodo%p", aux) + "[shape=Mrecord, color=blue,label=\"{"
+		cliente := arbol.Buscar(aux.Contenido.(*Pedido).Cliente)
+		if cliente != nil {
+			nodos += "{" + strconv.Itoa(cliente.(*Usuario).Dpi) + "|" + cliente.(*Usuario).Nombre + "}"
+		} else {
+			nodos += "Anónimo"
+		}
+		nodos += "|{" + aux.Contenido.(*Pedido).Tienda + "|" + "Calif.: " + strconv.Itoa(aux.Contenido.(*Pedido).Calificacion) + "*}}\"]\n"
 		conexionesP += fmt.Sprintf("nodo%p", aux) + "->" + fmt.Sprintf("nodo%p", aux.Contenido.(*Pedido).Productos[0]) + "[arrowhead=dot, color=\"#b8002b\"]\n"
 		listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis\n"
 		numCluster++

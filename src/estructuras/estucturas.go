@@ -31,7 +31,7 @@ type Pedido struct {
 	Departamento string    `json:Departamento`
 	Calificacion int       `json:Calificacion`
 	Productos    []*Codigo `json:Productos`
-	//Usuario      string    `json:Usuario`
+	Cliente      int       `json:Cliente`
 }
 
 type Codigo struct {
@@ -51,13 +51,13 @@ type Inventario struct {
 }
 
 type Producto struct {
-	Nombre      string  `json:Nombre`
-	Codigo      int     `json:Codigo`
-	Descripcion string  `json:Descripcion`
-	Precio      float32 `json:Precio`
-	Cantidad    int     `json:Cantidad`
-	Imagen      string  `json:Imagen`
-	//Almacenamiento string `json:Almacenamiento`
+	Nombre         string  `json:Nombre`
+	Codigo         int     `json:Codigo`
+	Descripcion    string  `json:Descripcion`
+	Precio         float32 `json:Precio`
+	Cantidad       int     `json:Cantidad`
+	Imagen         string  `json:Imagen`
+	Almacenamiento string  `json:Almacenamiento`
 }
 
 type DeleteReq struct {

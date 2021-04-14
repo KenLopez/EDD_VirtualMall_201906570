@@ -208,7 +208,7 @@ func (arbol *Arbol) GetTag(n *NodoArbol, meses bool) string {
 func (arbol *Arbol) TiendaTag(n *NodoArbol) string {
 	var cadena string = fmt.Sprintf("nodo%p", n) + "[label=\"<f0>|{" + "Peso: " + strconv.Itoa(n.Peso) + "|{" +
 		strconv.Itoa(n.Dato) + "|" + n.Contenido.(*Producto).Nombre + "|Q " + fmt.Sprintf("%.2f", n.Contenido.(*Producto).Precio) +
-		"}|Cant.:" + strconv.Itoa(n.Contenido.(*Producto).Cantidad) + "}|<f1>\"];\n"
+		"}|{Cant.:" + strconv.Itoa(n.Contenido.(*Producto).Cantidad) + "|Alm.:" + n.Contenido.(*Producto).Almacenamiento + "}}|<f1>\"];\n"
 	if n.Der == nil && n.Izq == nil {
 		return cadena
 	}

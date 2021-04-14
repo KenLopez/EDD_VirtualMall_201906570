@@ -410,16 +410,26 @@ func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else {
+		title := "Arbol-Cuentas"
+		switch cifrado {
+		case 0:
+			title += "-(Original)"
+			break
+		case 1:
+			title += "(Cifrado-Sensible)"
+		case 2:
+			title += "(Cifrado)"
+		}
 		data := []byte(arbolCuentas.Graficar(cifrado))
-		_ = ioutil.WriteFile("Arbol-Cuentas.dot", data, 0644)
+		_ = ioutil.WriteFile(title+".dot", data, 0644)
 		path, _ := exec.LookPath("dot")
-		cmd, _ := exec.Command(path, "-Tpng", "Arbol-Cuentas.dot").Output()
-		_ = ioutil.WriteFile("Arbol-Cuentas.png", cmd, os.FileMode(0777))
-		e := os.Remove("Arbol-Cuentas.dot")
+		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+		/*e := os.Remove("Arbol-Cuentas.dot")
 		if e != nil {
 			log.Fatal(e)
-		}
-		f, _ := os.Open("Arbol-Cuentas.png")
+		}*/
+		f, _ := os.Open(title + ".png")
 		reader := bufio.NewReader(f)
 		content, _ := ioutil.ReadAll(reader)
 		encoded := base64.StdEncoding.EncodeToString(content)
@@ -547,7 +557,7 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 			if nodoM != nil {
 				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
 				if cola != nil {
-					data := []byte(cola.GraficarPedidos())
+					data := []byte(cola.GraficarPedidos(arbolCuentas))
 					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot", data, 0644)
 					path, _ := exec.LookPath("dot")
 					cmd, _ := exec.Command(path, "-Tpng", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot").Output()

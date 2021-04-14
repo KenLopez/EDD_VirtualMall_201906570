@@ -1,8 +1,13 @@
 package estructuras
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strconv"
+	"strings"
+
+	"github.com/fernet/fernet-go"
 )
 
 type Key struct {
@@ -249,18 +254,56 @@ func (nodo *NodoB) getTag(cifrado int) string {
 	hijos := ""
 	links := ""
 	mid := ""
+	dpi := ""
+	correo := ""
+	nombre := ""
+	password := ""
+	cuenta := ""
 	llaves := nodo.CountKeys()
 	for i := 0; i <= llaves; i++ {
 		if i < llaves {
-			if cifrado == 0 {
-				if i == llaves/2 {
-					mid = "<mid>"
-				} else {
-					mid = ""
-				}
-				str += "<f" + strconv.Itoa(i) + ">|{{" + mid + strconv.Itoa(nodo.Keys[i].Valor) + "}|{" + nodo.Keys[i].Dato.(*Usuario).Correo + "}|{" + nodo.Keys[i].Dato.(*Usuario).Nombre + "|" +
-					nodo.Keys[i].Dato.(*Usuario).Password + "}|" + nodo.Keys[i].Dato.(*Usuario).Cuenta + "}|"
+			switch cifrado {
+			case 0:
+				dpi = strconv.Itoa(nodo.Keys[i].Valor)
+				correo = nodo.Keys[i].Dato.(*Usuario).Correo
+				nombre = nodo.Keys[i].Dato.(*Usuario).Nombre
+				password = nodo.Keys[i].Dato.(*Usuario).Password
+				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
+				break
+			case 1:
+				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				dpi = string(tok)[0:25]
+				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				correo = string(tok)[0:25]
+				nombre = nodo.Keys[i].Dato.(*Usuario).Nombre
+				cryptoPass := sha256.New()
+				cryptoPass.Write([]byte(nodo.Keys[i].Dato.(*Usuario).Password))
+				password = strings.ReplaceAll(base64.URLEncoding.EncodeToString(cryptoPass.Sum(nil)), "\"", "\\\"")[0:15]
+				password = strings.ReplaceAll(password, "}", "\\")
+				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
+				break
+			case 2:
+				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				dpi = string(tok)[0:25]
+				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				correo = string(tok)[0:25]
+				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Nombre), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				nombre = string(tok)[0:25]
+				cryptoPass := sha256.New()
+				cryptoPass.Write([]byte(nodo.Keys[i].Dato.(*Usuario).Password))
+				password = strings.ReplaceAll(base64.URLEncoding.EncodeToString(cryptoPass.Sum(nil)), "\"", "\\\"")[0:15]
+				password = strings.ReplaceAll(password, "}", "\\")
+				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Cuenta), &fernet.Key{byte(nodo.Keys[i].Valor)})
+				cuenta = string(tok)[0:25]
+				break
 			}
+			if i == llaves/2 {
+				mid = "<mid>"
+			} else {
+				mid = ""
+			}
+			str += "<f" + strconv.Itoa(i) + ">|{{" + mid + dpi + "}|{" + correo + "}|{" + nombre + "|" +
+				password + "}|" + cuenta + "}|"
 			if nodo.Keys[i].Izq != nil {
 				hijos += nodo.Keys[i].Izq.getTag(cifrado)
 				llavesH := nodo.Keys[i].Izq.CountKeys()
