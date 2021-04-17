@@ -129,6 +129,17 @@ function Reporte() {
         obtener()
     }
 
+    const Grafo = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetGrafo')
+            if (res.data.Tipo !== "Error"){
+                setImagen("data:image/png;base64,"+res.data.Content)
+                setTitle('Grafo Completo')
+            }
+        }
+        obtener()
+    }
+
     const Vector = ()=>{
         async function obtener(){
             let res = await axios.get('http://localhost:3000/getArreglo')
@@ -196,12 +207,15 @@ function Reporte() {
                 </Segment>
                 <Container fluid>
                     <Grid>
-                        <Grid.Row columns={2}>
+                        <Grid.Row columns={3}>
                             <Grid.Column>
                                 <Button color='teal' fluid onClick={Vector}>Obtener Arreglo<br/>de Tiendas</Button>
                             </Grid.Column>
                             <Grid.Column>
                                 <Button color='teal' fluid onClick={arbolA}>Obtener Árbol<br/> Años</Button>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Button color='teal' fluid onClick={Grafo}>Obtener Grafo<br/>Completo</Button>
                             </Grid.Column>
                         </Grid.Row>
                         <Grid.Row columns={2}>

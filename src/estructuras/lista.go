@@ -4,9 +4,9 @@ import (
 	"reflect"
 )
 
-type Nodo struct {
+type NodoLista struct {
 	Contenido  interface{}
-	Next, Prev *Nodo
+	Next, Prev *NodoLista
 }
 
 type NodoTienda struct {
@@ -15,7 +15,7 @@ type NodoTienda struct {
 }
 
 type Lista struct {
-	First, Last *Nodo
+	First, Last *NodoLista
 	Size        int
 }
 
@@ -27,11 +27,11 @@ func NewNodoTienda(tienda *Tienda) *NodoTienda {
 	return &NodoTienda{tienda, nil}
 }
 
-func NewNodo(contenido interface{}) *Nodo {
-	return &Nodo{contenido, nil, nil}
+func NewNodo(contenido interface{}) *NodoLista {
+	return &NodoLista{contenido, nil, nil}
 }
 
-func (lista *Lista) Buscar(dato string) *Nodo {
+func (lista *Lista) Buscar(dato string) *NodoLista {
 	if lista.Size == 0 {
 		return nil
 	} else {
@@ -85,33 +85,46 @@ func (lista *Lista) Eliminar(dato string) *Tienda {
 	}
 }
 
-func (lista *Lista) InsertarInicio(nuevo *Nodo) {
+func (lista *Lista) InsertarInicio(nuevo *NodoLista) {
 	nuevo.Next = lista.First
 	lista.First.Prev = nuevo
 	lista.First = nuevo
 }
 
-func (lista *Lista) InsertarFinal(nuevo *Nodo) {
+func (lista *Lista) InsertarSimple(nuevo *NodoLista) {
+	if lista.First == nil {
+		lista.First = nuevo
+	} else {
+		aux := lista.First
+		for aux.Next != nil {
+			aux = aux.Next
+		}
+		aux.Next = nuevo
+	}
+	lista.Size++
+}
+
+func (lista *Lista) InsertarFinal(nuevo *NodoLista) {
 	lista.Last.Next = nuevo
 	nuevo.Prev = lista.Last
 	lista.Last = nuevo
 }
 
-func (lista *Lista) InsertarEntre(nuevo *Nodo, aux *Nodo) {
+func (lista *Lista) InsertarEntre(nuevo *NodoLista, aux *NodoLista) {
 	nuevo.Next = aux
 	nuevo.Prev = aux.Prev
 	aux.Prev.Next = nuevo
 	aux.Prev = nuevo
 }
 
-func (nodo *Nodo) GetDatoString() string {
+func (nodo *NodoLista) GetDatoString() string {
 	if reflect.TypeOf(nodo.Contenido).String() == "*estructuras.NodoTienda" {
 		return nodo.Contenido.(*NodoTienda).Tienda.Nombre
 	}
 	return ""
 }
 
-func (lista *Lista) Insertar(nuevo *Nodo) {
+func (lista *Lista) Insertar(nuevo *NodoLista) {
 	lista.Size++
 	ascii1 := GetAscii(nuevo.GetDatoString())
 	if lista.Size-1 == 0 {
@@ -128,7 +141,7 @@ func (lista *Lista) Insertar(nuevo *Nodo) {
 		lista.InsertarFinal(nuevo)
 		return
 	}
-	var aux *Nodo = lista.First
+	var aux *NodoLista = lista.First
 	for i := 0; i < lista.Size-1; i++ {
 		ascii2 = GetAscii(aux.GetDatoString())
 		if ascii1 < ascii2 {
@@ -162,7 +175,7 @@ func (lista *Lista) ToString() string {
 func (lista *Lista) ToArray() *[]*Tienda {
 	var array []*Tienda
 	if lista.Size != 0 {
-		var aux *Nodo = lista.First
+		var aux *NodoLista = lista.First
 		for i := 0; i < lista.Size; i++ {
 			array = append(array, aux.Contenido.(*NodoTienda).Tienda)
 			aux = aux.Next

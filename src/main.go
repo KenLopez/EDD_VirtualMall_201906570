@@ -24,6 +24,7 @@ var vectorDatos []*estructuras.Lista
 var arbolAnios *estructuras.Arbol
 var arbolCuentas *estructuras.ArbolB = estructuras.NewArbolB(5)
 var key int = 132115
+var grafo *estructuras.Grafo
 
 func inicial(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "A_tus_órdenes,_capitán... :D")
@@ -87,6 +88,18 @@ func cargarUsuarios(w http.ResponseWriter, r *http.Request) {
 		arbolCuentas.Insertar(estructuras.NewKey(ms.Usuarios[i].Dpi, ms.Usuarios[i]))
 	}
 	json.NewEncoder(w).Encode("Usuarios Cargados")
+}
+
+func cargarGrafo(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoGrafo
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode("No Jaló :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	grafo = estructuras.NewGrafo(ms)
+	json.NewEncoder(w).Encode("Grafo Cargado")
 }
 
 func cargarPedidos(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +192,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 		json.NewEncoder(w).Encode(nil)
@@ -189,7 +202,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func buscarPosicion(request *estructuras.RequestFind) *estructuras.Nodo {
+func buscarPosicion(request *estructuras.RequestFind) *estructuras.NodoLista {
 	indice := string(request.Nombre[0])
 	var fila, columna int
 	for i := 0; i < len(indices); i++ {
@@ -235,7 +248,7 @@ func id(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "No_Encontrado")
 	} else {
 		var lista []*estructuras.Tienda
-		var aux *estructuras.Nodo = vectorDatos[numero].First
+		var aux *estructuras.NodoLista = vectorDatos[numero].First
 		for i := 0; i < vectorDatos[numero].Size; i++ {
 			lista = append(lista, aux.Contenido.(*estructuras.NodoTienda).Tienda)
 			aux = aux.Next
@@ -379,7 +392,7 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 					"|{Pos: " + strconv.Itoa(countPos+i) + "|Calif.: " + strconv.Itoa(calificacion) +
 					"*}\"];\n"
 				if vectorDatos[countPos+i].Size > 0 {
-					var aux *estructuras.Nodo = vectorDatos[countPos+i].First
+					var aux *estructuras.NodoLista = vectorDatos[countPos+i].First
 					conexionesL += "struct" + strconv.Itoa(countPos+i) + "->nodo" + strconv.Itoa(countList) +
 						"[arrowhead=dot, color=\"#b8002b\"];\n"
 					listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
@@ -469,6 +482,28 @@ func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
 		path, _ := exec.LookPath("dot")
 		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
 		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+		e := os.Remove("Arbol-Cuentas.dot")
+		if e != nil {
+			log.Fatal(e)
+		}
+		f, _ := os.Open(title + ".png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+	}
+}
+
+func getGrafo(w http.ResponseWriter, r *http.Request) {
+	if grafo == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		title := "Grafo"
+		data := []byte(grafo.Graficar())
+		_ = ioutil.WriteFile(title+".dot", data, 0644)
+		path, _ := exec.LookPath("neato")
+		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
 		/*e := os.Remove("Arbol-Cuentas.dot")
 		if e != nil {
 			log.Fatal(e)
@@ -499,7 +534,7 @@ func linealizar(ms *estructuras.Archivo) {
 				vector = append(vector, estructuras.NewLista())
 			}
 			for k := 0; k < len(ms.Datos[j].Departamentos[i].Tiendas); k++ {
-				var nodo *estructuras.Nodo = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
+				var nodo *estructuras.NodoLista = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
 				if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 1 {
 					vector[len(vector)-5].Insertar(nodo)
 				} else if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 2 {
@@ -636,7 +671,7 @@ func getInventario(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 		json.NewEncoder(w).Encode(nil)
@@ -668,7 +703,7 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
 		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
 	} else {
@@ -710,6 +745,7 @@ func main() {
 	router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
 	router.HandleFunc("/CargarUsuarios", cargarUsuarios).Methods("POST")
+	router.HandleFunc("/CargarGrafo", cargarGrafo).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("GET")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
@@ -723,6 +759,7 @@ func main() {
 	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("POST")
 	router.HandleFunc("/GetArbolCuentas/{cifrado}", getArbolCuentas).Methods("GET")
 	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
+	router.HandleFunc("/GetGrafo", getGrafo).Methods("GET")
 	router.HandleFunc("/Login", login).Methods("POST")
 	router.HandleFunc("/Registro", registro).Methods("POST")
 	c := cors.New(cors.Options{

@@ -40,9 +40,7 @@ function Inventario() {
     if (data != '') {
         return (
             <>
-            <NavBar
-            activo={1}
-            />
+            <NavBar/>
             <div className="Content">
                 <div className="ui segment mosaico container">
                     <Segment>
@@ -81,9 +79,7 @@ function Inventario() {
         if(!req){
             return(
                 <>
-                <NavBar
-                activo={1}
-                />
+                <NavBar/>
                 <div>
                     <Segment>
                         <Loader active />
@@ -95,9 +91,7 @@ function Inventario() {
         }else{
             return(
                 <>
-                <NavBar
-                activo={1}
-                />
+                <NavBar/>
                 <div className="Content">
                     <div className="ui segment mosaico container">
                         <Segment>

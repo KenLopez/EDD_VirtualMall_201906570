@@ -6,7 +6,7 @@ import (
 )
 
 type Cola struct {
-	Frente *Nodo
+	Frente *NodoLista
 }
 
 func NewCola() *Cola {
@@ -14,7 +14,7 @@ func NewCola() *Cola {
 }
 
 func (cola *Cola) Queue(dato interface{}) {
-	nodo := &Nodo{
+	nodo := &NodoLista{
 		Contenido: dato,
 		Next:      nil,
 	}
@@ -29,7 +29,7 @@ func (cola *Cola) Queue(dato interface{}) {
 	}
 }
 
-func (cola *Cola) Dequeue() *Nodo {
+func (cola *Cola) Dequeue() *NodoLista {
 	if cola.Frente == nil {
 		return nil
 	}

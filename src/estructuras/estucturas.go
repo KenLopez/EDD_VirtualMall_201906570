@@ -22,6 +22,22 @@ type Usuario struct {
 	Cuenta   string `json:Cuenta`
 }
 
+type ArchivoGrafo struct {
+	Nodos                []*NodoGrafo `json:Nodos`
+	PosicionInicialRobot string       `json:PosicionInicialRobot`
+	Entrega              string       `json:Entrega`
+}
+
+type NodoGrafo struct {
+	Nombre  string           `json:Nombre`
+	Enlaces []*EnlaceArchivo `json:Enlace`
+}
+
+type EnlaceArchivo struct {
+	Nombre    string  `json:Nombre`
+	Distancia float32 `json:Distancia`
+}
+
 type ArchivoInventario struct {
 	Inventarios []*Inventario `json:Inventarios`
 }

@@ -11,6 +11,11 @@ function ArchivosContainer() {
         <div className="Content">
             <div className="ui segment mosaico container">
                 <CargaArchivo
+                        Ruta='http://localhost:3000/cargarGrafo'
+                        Title='Cargar Grafo'
+                />
+                <br/>
+                <CargaArchivo
                         Ruta='http://localhost:3000/cargartienda'
                         Title='Cargar Tiendas'
                 />
