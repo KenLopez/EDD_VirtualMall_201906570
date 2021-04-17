@@ -1,20 +1,19 @@
 import {React, useEffect, useState} from 'react'
 import { useHistory, useParams } from 'react-router'
 import {Segment, Header, Icon, Loader, Image, Grid, Rating, Container, Message} from 'semantic-ui-react'
-import CartaProducto from './CartaProducto'
 import '../css/Content.css'
 import NavBar from './NavBar'
 const axios = require('axios').default
 
-function Tienda() {
+function Inventario() {
     const history = useHistory()
     if (localStorage.getItem("LOGED") == null){
         history.push("/Login")
-    }else if (localStorage.getItem("LOGED")=="Admin"){
-        history.push("/Reporte")
+    }else if (localStorage.getItem("LOGED")=="Cliente"){
+        history.push("/Home")
     }
     let {Departamento, Nombre, Calificacion} = useParams()
-    const [Datos, setDatos] = useState([])
+    const [Datos, setDatos] = useState(null)
     const [Descripcion, setDescripcion] = useState('')
     const [Contacto, setContacto] = useState('')
     const [data, setData] = useState('')
@@ -30,26 +29,20 @@ function Tienda() {
         async function obtener(){
             if(!req){
                 setreq(true)
-                let res = await axios.post('http://localhost:3000/GetInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
-                info.push(res.data)
-                //info.push(res2.data)
-                //console.log(info)
-                setDatos(info[0].Productos) 
-                setDescripcion(info[0].Descripcion)
-                setContacto(info[0].Contacto)
-                if (info.length>0) {
-                    let res2 = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
-                    setData("data:image/png;base64,"+res2.data)   
-                }
-                //setDot(info[1])             
+                let res = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
+                if (res.data.Tipo != 'Error'){
+                    setData("data:image/png;base64,"+res.data.Content)  
+                }           
             }
         }
         obtener()
     })
-    if (Datos.length>0) {
+    if (data != '') {
         return (
             <>
-            <NavBar/>
+            <NavBar
+            activo={1}
+            />
             <div className="Content">
                 <div className="ui segment mosaico container">
                     <Segment>
@@ -69,28 +62,17 @@ function Tienda() {
                             <Header size="huge">
                                 <Rating icon='star' defaultRating={Calificacion} maxRating={5} disabled/>
                             </Header>
-                            <Header size="medium">
-                                <Header.Content>{Contacto}</Header.Content>
-                            </Header>
-                            <br/>
-                            <Container textAlign="center" fluid>
-                                <Header size="medium">{Descripcion}</Header>
-                            </Container>
                     </Segment>
-                    <div className="ui three column link cards row">
-                        {Datos.map((c,index)=>
-                                <CartaProducto
-                                    Nombre={Datos[index].Nombre}
-                                    Descripcion={Datos[index].Descripcion}
-                                    Codigo={Datos[index].Codigo}
-                                    Precio={Datos[index].Precio}
-                                    Imagen={Datos[index].Imagen}
-                                    Cantidad={Datos[index].Cantidad}
-                                    key={Datos[index].Codigo}
-                                />
-                            )
-                        }
-                    </div>
+                    <Segment>
+                        <Header size="large">
+                            Árbol de inventario
+                        </Header>
+                    </Segment>
+                    <Container fluid>
+                        <center>
+                            <Image src={data} size='massive'/>
+                        </center>
+                    </Container>
                 </div>
             </div>
             </>
@@ -99,7 +81,9 @@ function Tienda() {
         if(!req){
             return(
                 <>
-                <NavBar/>
+                <NavBar
+                activo={1}
+                />
                 <div>
                     <Segment>
                         <Loader active />
@@ -111,7 +95,9 @@ function Tienda() {
         }else{
             return(
                 <>
-                <NavBar/>
+                <NavBar
+                activo={1}
+                />
                 <div className="Content">
                     <div className="ui segment mosaico container">
                         <Segment>
@@ -151,4 +137,4 @@ function Tienda() {
     }
 }
 
-export default Tienda
+export default Inventario

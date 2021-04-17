@@ -1,11 +1,8 @@
 package estructuras
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/fernet/fernet-go"
 )
@@ -249,7 +246,7 @@ func rebalancear(nodo *NodoB) {
 	}
 }
 
-func (nodo *NodoB) getTag(cifrado int) string {
+func (nodo *NodoB) getTag(cifrado int, key int) string {
 	str := fmt.Sprintf("nodo%p", nodo) + "[label=\""
 	hijos := ""
 	links := ""
@@ -262,39 +259,31 @@ func (nodo *NodoB) getTag(cifrado int) string {
 	llaves := nodo.CountKeys()
 	for i := 0; i <= llaves; i++ {
 		if i < llaves {
+			password = nodo.Keys[i].Dato.(*Usuario).Password[0:10]
 			switch cifrado {
 			case 0:
 				dpi = strconv.Itoa(nodo.Keys[i].Valor)
 				correo = nodo.Keys[i].Dato.(*Usuario).Correo
 				nombre = nodo.Keys[i].Dato.(*Usuario).Nombre
-				password = nodo.Keys[i].Dato.(*Usuario).Password
 				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
 				break
 			case 1:
 				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				dpi = string(tok)[0:25]
+				dpi = string(tok)[10:25]
 				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				correo = string(tok)[0:25]
+				correo = string(tok)[10:25]
 				nombre = nodo.Keys[i].Dato.(*Usuario).Nombre
-				cryptoPass := sha256.New()
-				cryptoPass.Write([]byte(nodo.Keys[i].Dato.(*Usuario).Password))
-				password = strings.ReplaceAll(base64.URLEncoding.EncodeToString(cryptoPass.Sum(nil)), "\"", "\\\"")[0:15]
-				password = strings.ReplaceAll(password, "}", "\\")
 				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
 				break
 			case 2:
 				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				dpi = string(tok)[0:25]
+				dpi = string(tok)[10:25]
 				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				correo = string(tok)[0:25]
+				correo = string(tok)[10:25]
 				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Nombre), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				nombre = string(tok)[0:25]
-				cryptoPass := sha256.New()
-				cryptoPass.Write([]byte(nodo.Keys[i].Dato.(*Usuario).Password))
-				password = strings.ReplaceAll(base64.URLEncoding.EncodeToString(cryptoPass.Sum(nil)), "\"", "\\\"")[0:15]
-				password = strings.ReplaceAll(password, "}", "\\")
+				nombre = string(tok)[10:25]
 				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Cuenta), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				cuenta = string(tok)[0:25]
+				cuenta = string(tok)[10:25]
 				break
 			}
 			if i == llaves/2 {
@@ -305,7 +294,7 @@ func (nodo *NodoB) getTag(cifrado int) string {
 			str += "<f" + strconv.Itoa(i) + ">|{{" + mid + dpi + "}|{" + correo + "}|{" + nombre + "|" +
 				password + "}|" + cuenta + "}|"
 			if nodo.Keys[i].Izq != nil {
-				hijos += nodo.Keys[i].Izq.getTag(cifrado)
+				hijos += nodo.Keys[i].Izq.getTag(cifrado, key)
 				llavesH := nodo.Keys[i].Izq.CountKeys()
 				if llavesH%2 != 0 {
 					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i].Izq) + ":<mid>\n"
@@ -316,7 +305,7 @@ func (nodo *NodoB) getTag(cifrado int) string {
 		} else {
 			str += "<f" + strconv.Itoa(i) + ">\"]\n"
 			if nodo.Keys[i-1].Der != nil {
-				hijos += nodo.Keys[i-1].Der.getTag(cifrado)
+				hijos += nodo.Keys[i-1].Der.getTag(cifrado, key)
 				llavesH := nodo.Keys[i-1].Der.CountKeys()
 				if llavesH%2 != 0 {
 					links += fmt.Sprintf("nodo%p", nodo) + ":" + "f" + strconv.Itoa(i) + "->" + fmt.Sprintf("nodo%p", nodo.Keys[i-1].Der) + ":<mid>\n"
@@ -330,6 +319,6 @@ func (nodo *NodoB) getTag(cifrado int) string {
 	return str + hijos + links
 }
 
-func (arbol *ArbolB) Graficar(cifrado int) string {
-	return "digraph G{\nnode [shape=Mrecord, color=purple]\n" + arbol.Raiz.getTag(cifrado) + "}"
+func (arbol *ArbolB) Graficar(cifrado int, key int) string {
+	return "digraph G{\nnode [shape=Mrecord, color=purple]\n" + arbol.Raiz.getTag(cifrado, key) + "}"
 }

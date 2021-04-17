@@ -9,6 +9,11 @@ type ArchivoUsuarios struct {
 	Usuarios []*Usuario `json:Usuarios`
 }
 
+type UserLogin struct {
+	Dpi      int
+	Password string
+}
+
 type Usuario struct {
 	Dpi      int    `json:Dpi`
 	Nombre   string `json:Nombre`
