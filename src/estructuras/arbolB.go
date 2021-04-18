@@ -169,83 +169,6 @@ func buscarB(raiz *NodoB, key int) interface{} {
 	return nil
 }
 
-func (arbol *ArbolB) Eliminar(key int) *Key {
-	return eliminarB(arbol.Raiz, key)
-}
-
-func (nodo *NodoB) getMin() int {
-	return (nodo.Max - 1) / 2
-}
-
-func (nodo *NodoB) getLast() *Key {
-	for i := 0; i < nodo.Max; i++ {
-		if nodo.Keys[i] == nil {
-			return nodo.Keys[i-1]
-		}
-	}
-	return nil
-}
-
-func eliminarB(raiz *NodoB, key int) *Key {
-	llaves := raiz.CountKeys()
-	for i := 0; i < llaves; i++ {
-		if key < raiz.Keys[i].Valor {
-			if raiz.Keys[i].Izq != nil {
-				return eliminarB(raiz.Keys[i].Izq, key)
-			} else {
-				return nil
-			}
-		} else if key == raiz.Keys[i].Valor {
-			elim := raiz.Keys[i]
-			if raiz.Keys[i].Der != nil {
-				if raiz.Keys[i+1] == nil {
-					raiz.Keys[i] = nil
-				} else {
-					for i := 0; i < llaves-1; i++ {
-						raiz.Keys[i] = raiz.Keys[i+1]
-					}
-				}
-				if raiz.CountKeys() < raiz.getMin() {
-					rebalancear(raiz)
-				}
-			}
-			return elim
-		}
-		if i == raiz.CountKeys()-1 {
-			if raiz.Keys[i].Der != nil {
-				return eliminarB(raiz.Keys[i].Der, key)
-			} else {
-				return nil
-			}
-		}
-	}
-	return nil
-}
-
-func rebalancear(nodo *NodoB) {
-	if nodo.NodoPadre != nil {
-		llaves := nodo.NodoPadre.CountKeys()
-		pos := 0
-		for pos = 0; pos < llaves; pos++ {
-			if nodo.NodoPadre.Keys[pos].Izq == nodo {
-				break
-			}
-		}
-		if nodo.NodoPadre.Keys[pos].Der.CountKeys() > nodo.getMin() {
-			mover := eliminarB(nodo, nodo.NodoPadre.Keys[pos].Der.Keys[0].Valor)
-			mover.Der = nodo.NodoPadre.Keys[pos].Der
-			mover.Izq = nodo.NodoPadre.Keys[pos].Izq
-			nodo.NodoPadre.Keys[pos].Izq = nil
-			nodo.NodoPadre.Keys[pos].Der = nil
-			nodo.insertKey(nodo.NodoPadre.Keys[pos])
-			nodo.NodoPadre.Keys[pos] = mover
-		} else if pos > 0 && nodo.NodoPadre.Keys[pos-1].Izq.CountKeys() > nodo.getMin() {
-			mover := eliminarB(nodo, nodo.NodoPadre.Keys[pos-1].Izq.getLast().Valor)
-			nodo.insertKey(mover)
-		}
-	}
-}
-
 func (nodo *NodoB) getTag(cifrado int, key int) string {
 	str := fmt.Sprintf("nodo%p", nodo) + "[label=\""
 	hijos := ""
@@ -321,4 +244,151 @@ func (nodo *NodoB) getTag(cifrado int, key int) string {
 
 func (arbol *ArbolB) Graficar(cifrado int, key int) string {
 	return "digraph G{\nnode [shape=Mrecord, color=purple]\n" + arbol.Raiz.getTag(cifrado, key) + "}"
+}
+
+func (arbol *ArbolB) Eliminar(key int) *Key {
+	return eliminarB(arbol.Raiz, key)
+}
+
+func (nodo *NodoB) getLast() *Key {
+	return nodo.Keys[nodo.CountKeys()-1]
+}
+
+func (nodo *NodoB) prestarIzq(pos int) {
+	nodo.insertKey(NewKey(nodo.NodoPadre.Keys[pos].Valor, nodo.NodoPadre.Keys[pos].Dato))
+	prestado := nodo.NodoPadre.Keys[pos].Izq.getLast()
+	nodo.NodoPadre.Keys[pos].Dato = prestado.Dato
+	nodo.NodoPadre.Keys[pos].Valor = prestado.Valor
+	nodo.NodoPadre.Keys[pos].Izq.elimKey(nodo.NodoPadre.Keys[pos].Izq.CountKeys() - 1)
+}
+
+func (nodo *NodoB) prestarDer(pos int) {
+	nodo.insertKey(NewKey(nodo.NodoPadre.Keys[pos].Valor, nodo.NodoPadre.Keys[pos].Dato))
+	prestado := nodo.NodoPadre.Keys[pos].Der.Keys[0]
+	nodo.NodoPadre.Keys[pos].Dato = prestado.Dato
+	nodo.NodoPadre.Keys[pos].Valor = prestado.Valor
+	nodo.NodoPadre.Keys[pos].Der.elimKey(0)
+}
+
+func (nodo *NodoB) rebalancear() {
+	pos := 0
+	llavesPadre := nodo.NodoPadre.CountKeys()
+	for i := 0; i < llavesPadre; i++ {
+		if nodo.NodoPadre.Keys[i].Izq == nodo {
+			pos = i
+			break
+		}
+		if i == llavesPadre-1 {
+			pos = i + 1
+		}
+	}
+	if pos == llavesPadre && nodo.NodoPadre.Keys[pos-1].Izq.CountKeys() > (nodo.Max-1)/2 {
+		nodo.prestarIzq(pos - 1)
+	} else if pos == 0 && nodo.NodoPadre.Keys[pos].Der.CountKeys() > (nodo.Max-1)/2 {
+		nodo.prestarDer(pos)
+	} else {
+		if pos < llavesPadre && nodo.NodoPadre.Keys[pos].Der.CountKeys() > (nodo.Max-1)/2 {
+			nodo.prestarIzq(pos)
+		} else if pos > 0 && nodo.NodoPadre.Keys[pos-1].Izq.CountKeys() > (nodo.Max-1)/2 {
+			nodo.prestarDer(pos - 1)
+		} else {
+			newHijo := NewNodoB(nodo.Max)
+			var sep *Key
+			var hermano *NodoB
+			if pos == llavesPadre {
+				sep = nodo.NodoPadre.Keys[pos-1]
+				hermano = nodo.NodoPadre.Keys[pos-1].Izq
+			} else {
+				sep = nodo.NodoPadre.Keys[pos]
+				hermano = nodo.NodoPadre.Keys[pos].Der
+			}
+			newHijo.Keys = nodo.Keys
+			sepKey := NewKey(sep.Valor, sep.Dato)
+			sepKey.Izq = newHijo.Keys[newHijo.CountKeys()-1].Der
+			newHijo.insertKey(sepKey)
+			llavesHermano := hermano.CountKeys()
+			for i := 0; i < llavesHermano; i++ {
+				newHijo.insertKey(hermano.Keys[i])
+			}
+			if nodo.NodoPadre.NodoPadre == nil {
+				for i := 0; i < newHijo.CountKeys(); i++ {
+					if newHijo.Keys[i].Izq != nil {
+						newHijo.Keys[i].Izq.NodoPadre = nodo.NodoPadre
+						newHijo.Keys[i].Der.NodoPadre = nodo.NodoPadre
+					}
+				}
+				nodo.NodoPadre.Keys = newHijo.Keys
+			} else {
+				nodo.Keys = newHijo.Keys
+				if pos > 0 {
+					nodo.NodoPadre.Keys[pos-1].Der = nodo
+				}
+				if pos < llavesPadre-1 {
+					nodo.NodoPadre.Keys[pos+1].Izq = nodo
+				}
+				for i := pos; i < llavesPadre; i++ {
+					nodo.NodoPadre.Keys[i] = nodo.NodoPadre.Keys[i+1]
+				}
+				if nodo.NodoPadre.CountKeys() < (nodo.Max-1)/2 {
+					nodo.NodoPadre.rebalancear()
+				}
+			}
+		}
+	}
+}
+
+func (nodo *NodoB) elimKey(pos int) {
+	llaves := nodo.CountKeys()
+	if pos == llaves-1 {
+		nodo.Keys[pos] = nil
+	} else {
+		for i := pos; i < nodo.Max-1; i++ {
+			nodo.Keys[i] = nodo.Keys[i+1]
+		}
+	}
+	if nodo.NodoPadre != nil && nodo.CountKeys() < (nodo.Max-1)/2 {
+		nodo.rebalancear()
+	}
+}
+
+func (nodo *NodoB) hijoMin() *NodoB {
+	llaves := nodo.CountKeys() - 1
+	if nodo.Keys[llaves].Der == nil {
+		return nodo
+	} else {
+		return nodo.Keys[llaves].Der.hijoMin()
+	}
+}
+
+func eliminarB(raiz *NodoB, key int) *Key {
+	llaves := raiz.CountKeys()
+	for i := 0; i < llaves; i++ {
+		if key < raiz.Keys[i].Valor {
+			if raiz.Keys[i].Izq != nil {
+				return eliminarB(raiz.Keys[i].Izq, key)
+			} else {
+				return nil
+			}
+		} else if key == raiz.Keys[i].Valor {
+			elim := raiz.Keys[i]
+			if raiz.Keys[i].Izq == nil {
+				raiz.elimKey(i)
+			} else {
+				min := raiz.Keys[i].Izq.hijoMin()
+				minKeys := min.CountKeys()
+				raiz.Keys[i].Valor = min.Keys[minKeys-1].Valor
+				raiz.Keys[i].Dato = min.Keys[minKeys-1].Dato
+				min.elimKey(minKeys - 1)
+			}
+			return elim
+		}
+		if i == raiz.CountKeys()-1 {
+			if raiz.Keys[i].Der != nil {
+				return eliminarB(raiz.Keys[i].Der, key)
+			} else {
+				return nil
+			}
+		}
+	}
+	return nil
 }

@@ -1,6 +1,6 @@
 import {React, useState} from 'react'
 import { useHistory } from 'react-router'
-import { Button, Confirm, Header, Icon, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
+import { Button, Confirm, Form, Header, Icon, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
 import NavBar from './NavBar'
 import SHA256 from 'crypto-js/sha256';
 const axios = require('axios').default
@@ -46,13 +46,15 @@ function Login() {
                     </Header>
                 </Segment>
                 <center>
-                    <Input required icon='address card' iconPosition='left' size="big" placeholder="DPI..." onChange={ (e)=>{
-                                        setDpi(e.target.value)}}/>
-                    <br/><br/>
-                    <Input required type='password' icon='key' iconPosition='left' size="big" placeholder="Contraseña..." onChange={ (e)=>{
-                                        setPassword(e.target.value)}}/>
-                    <br/><br/>
-                    <Button color="purple" size="big" onClick={ingresar}>Entrar</Button>
+                    <Form>
+                        <Input icon='address card' iconPosition='left' size="big" placeholder="DPI..." onChange={ (e)=>{
+                                            setDpi(e.target.value)}}/>
+                        <br/><br/>
+                        <Input type='password' icon='key' iconPosition='left' size="big" placeholder="Contraseña..." onChange={ (e)=>{
+                                            setPassword(e.target.value)}}/>
+                        <br/><br/>
+                        <Button type="submit" color="purple" size="big" onClick={ingresar}>Entrar</Button>
+                    </Form>
                 </center>
             </div>
         </div>

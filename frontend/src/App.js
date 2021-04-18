@@ -11,6 +11,7 @@ import Login from './components/Login'
 import Registro from './components/Registro'
 import TiendasContainer from './components/TiendasContainer'
 import Inventario from './components/Inventario'
+import Cuenta from './components/Cuenta'
 
 function App() {
   return (
@@ -27,7 +28,9 @@ function App() {
         <Route path="/Reporte" component={Reporte}/>
         <Route exact path="/Tienda/:Departamento/:Nombre/:Calificacion" component={Tienda}/>
         <Route exact path="/Inventarios/:Departamento/:Nombre/:Calificacion" component={Inventario}/>
-        <Route exact path="/Inventarios" component={TiendasContainer}/>
+        <Route path="/Inventarios" component={TiendasContainer}/>
+        <Route path="/Cuenta" component={Cuenta}/>
+
         <Segment inverted color='black' className="Footer">
           <center>
             Kenneth Haroldo López López<br/>201906570<br/>USAC 2021

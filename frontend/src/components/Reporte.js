@@ -19,6 +19,7 @@ function Reporte() {
     const [cat, setCat] = useState('')
     const [day, setDay] = useState('')
     const [cipher, setCipher] = useState('')
+    const [key, setKey] = useState('')
     function getMonth(m){
         switch (m) {
             case 'ENERO':
@@ -218,7 +219,7 @@ function Reporte() {
                                 <Button color='teal' fluid onClick={Grafo}>Obtener Grafo<br/>Completo</Button>
                             </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row columns={2}>
+                        <Grid.Row columns={4}>
                             <Grid.Column>
                                 <Dropdown placeholder='Tipo...' selection fluid options={cipherOptions} onChange={ (e)=>{
                                     setCipher(getCipher(e.target.innerText))
@@ -226,7 +227,17 @@ function Reporte() {
                             </Grid.Column>
                             <Grid.Column>
                                 <center>
-                                    <Button color='teal' onClick={ArbolCuentas}>Obtener Árbol de Cuentas</Button>
+                                    <Button fluid color='teal' onClick={ArbolCuentas}>Obtener Árbol de Cuentas</Button>
+                                </center>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Input fluid placeholder='Key...' onChange={ (e)=>{
+                                    setCipher(getCipher(e.target.innerText))
+                                }}/>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <center>
+                                    <Button fluid color='teal' >Actualizar Llave</Button>
                                 </center>
                             </Grid.Column>
                         </Grid.Row>

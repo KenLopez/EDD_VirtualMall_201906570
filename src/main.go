@@ -62,6 +62,27 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func eliminarCuenta(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.UserLogin
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo iniciar sesión."})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	cuenta := arbolCuentas.Buscar(ms.Dpi)
+	if cuenta != nil {
+		if string(cuenta.(*estructuras.Usuario).Password) == string(ms.Password) {
+			arbolCuentas.Eliminar(ms.Dpi)
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	}
+}
+
 func registro(w http.ResponseWriter, r *http.Request) {
 	var ms *estructuras.Usuario
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -482,7 +503,7 @@ func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
 		path, _ := exec.LookPath("dot")
 		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
 		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
-		e := os.Remove("Arbol-Cuentas.dot")
+		e := os.Remove(title + ".dot")
 		if e != nil {
 			log.Fatal(e)
 		}
@@ -749,6 +770,7 @@ func main() {
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("GET")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
+	router.HandleFunc("/EliminarCuenta", eliminarCuenta).Methods("DELETE")
 	router.HandleFunc("/guardar", guardar).Methods("GET")
 	router.HandleFunc("/getTiendas", getTiendas).Methods("GET")
 	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
@@ -765,6 +787,7 @@ func main() {
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
+		AllowedMethods:   []string{"POST", "GET", "DELETE"},
 	})
 
 	handler := c.Handler(router)

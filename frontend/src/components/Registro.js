@@ -36,12 +36,12 @@ function Registro() {
             }
         }
         if (isNaN(parseInt(dpi))){
-            setErrDpi('DPI ingresado no válido.')
+            setErrDpi('*DPI ingresado no válido.')
         }else{
-            if (confirmar === password){
+            if (confirmar === password && confirmar!=="" && password!==""){
                 post()
             }else{
-                setErrConfirmar('Las contraseñas no coinciden.')
+                setErrConfirmar('*Las contraseñas no coinciden.')
             }
         }
         
@@ -62,12 +62,12 @@ function Registro() {
                 </Segment>
                 <Form>
                     <Form.Field>
-                        <label>DPI:</label>
+                        <label color='red'>DPI:</label>
                         <Input required icon='address card' iconPosition='left' size="big" placeholder="DPI..." onChange={ (e)=>{
                                         setDpi(e.target.value)}}
                         />
                     </Form.Field>
-                    <p color='red'>{errDpi}</p>
+                    <p>{errDpi}</p>
                     <Form.Field>
                         <label>Nombre:</label>
                         <Input required icon='pencil alternate' iconPosition='left' size="big" placeholder="Nombre..." onChange={ (e)=>{

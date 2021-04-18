@@ -21,21 +21,26 @@ function NavBar(props) {
     if (!req){
         var option = []
         var link = []
+        let length
         if (localStorage.getItem("LOGED") == 'Admin'){
             setColor('teal')
             setTitle('Virtual Mall Administrador')
-            option=["Reportes", "Inventarios", "Cargar Archivos"]
-            link = ["/Reporte", "/Inventarios", "/CargarArchivo", "/Login"]
+            option=["Reportes", "Inventarios", "Cargar Archivos", "Cuenta"]
+            link = ["/Reporte", "/Inventarios", "/CargarArchivo", "/Cuenta"]
             setLogout(true)
         }else if (localStorage.getItem("LOGED") == 'Cliente'){
             option=["Home", "Carrito de Compra","Cuenta"]
-            link=["/Home", "/CarritoCompra"]
+            link=["/Home", "/CarritoCompra", "/Cuenta"]
             setLogout(true)
         }else{
             option=["Iniciar Sesión", "Registro"]
             link=["/Login", "/Registro"]
         }
-        setActivo(option[props.activo])
+        if (props.activo>=0){
+            setActivo(option[props.activo])
+        }else{
+            setActivo(option[option.length+props.activo])
+        }
         setOptions(option)
         setUrl(link)
         setReq(true)
