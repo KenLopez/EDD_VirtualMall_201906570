@@ -1,12 +1,14 @@
 package estructuras
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Grafo struct {
-	Nodos     *Lista
-	Recorrido *Lista
-	Inicio    *Vertice
-	Entrega   *Vertice
+	Nodos   *Lista
+	Inicio  *Vertice
+	Entrega *Vertice
 }
 
 type Vertice struct {
@@ -73,10 +75,85 @@ func EnlaceExists(enlaces *Lista, enlace *Enlace) *Enlace {
 	return nil
 }
 
+func (grafo *Grafo) RecorridoRobot(pedido *Pedido, destinos *Cola) {
+	pedido.CaminoCorto = NewLista()
+	aux := destinos.Dequeue()
+	actual := grafo.Inicio
+	for aux != nil {
+		new := grafo.RecorridoCorto(actual, aux.Contenido.(*Vertice))
+		if new == nil {
+			break
+		} else if new.First == nil {
+			break
+		}
+		pedido.CaminoCorto.InsertarSimple(new.First)
+		actual = aux.Contenido.(*Vertice)
+		aux = destinos.Dequeue()
+	}
+}
+
+func (grafo *Grafo) RecorridoCorto(inicio *Vertice, destino *Vertice) *Lista {
+	movimientos := NewLista()
+	visitados := NewLista()
+	visitados.InsertarSimple(NewNodo(inicio))
+	actual := inicio
+	var transicion *Movimiento
+	for actual.Nombre != destino.Nombre {
+		transicion = grafo.aristaCorta(actual, visitados)
+		if transicion == nil {
+			return nil
+		}
+		visitados.InsertarSimple(NewNodo(transicion.Destino))
+		movimientos.InsertarSimple(NewNodo(transicion))
+		actual = transicion.Destino
+	}
+	return movimientos
+}
+
+func verticeInList(lista *Lista, nombre string) bool {
+	if lista.First != nil {
+		aux := lista.First
+		for aux != nil {
+			if aux.Contenido.(*Vertice).Nombre == nombre {
+				return true
+			}
+			aux = aux.Next
+		}
+		return false
+	} else {
+		return false
+	}
+}
+
+func (grafo *Grafo) aristaCorta(inicio *Vertice, visitados *Lista) *Movimiento {
+	var best *Movimiento
+	aux := inicio.Enlaces.First
+	for aux != nil {
+		if !verticeInList(visitados, aux.Contenido.(*Enlace).Destino.Nombre) {
+			best = NewMovimiento(inicio, aux.Contenido.(*Enlace).Peso, aux.Contenido.(*Enlace).Destino)
+			break
+		}
+		aux = aux.Next
+	}
+	if best == nil {
+		return nil
+	}
+	aux = inicio.Enlaces.First
+	for aux != nil {
+		if aux.Contenido.(*Enlace).Peso < best.Peso {
+			if !verticeInList(visitados, aux.Contenido.(*Enlace).Destino.Nombre) {
+				best.Peso = aux.Contenido.(*Enlace).Peso
+				best.Destino = aux.Contenido.(*Enlace).Destino
+			}
+		}
+		aux = aux.Next
+	}
+	return best
+}
+
 func NewGrafo(archivo *ArchivoGrafo) *Grafo {
 	graph := &Grafo{
-		Nodos:     NewLista(),
-		Recorrido: NewLista(),
+		Nodos: NewLista(),
 	}
 	for i := 0; i < len(archivo.Nodos); i++ {
 		if graph.VerticeExists(archivo.Nodos[i].Nombre) == nil {
@@ -122,20 +199,34 @@ func (grafo *Grafo) Graficar() string {
 	enlaces := NewLista()
 	aux := grafo.Nodos.First
 	extra := ""
+	name := ""
 	for aux != nil {
 		if aux.Contenido.(*Vertice) == grafo.Inicio {
 			extra = "style=filled, fillcolor=\"#fcba03\", color=\"#8a2301\""
+			name = aux.Contenido.(*Vertice).Nombre + "\\n" + "(INICIO)"
 		} else if aux.Contenido.(*Vertice) == grafo.Entrega {
-			extra = "style=filled, fillcolor=\"#bb0ec4\""
+			extra = "style=filled, fillcolor=\"#dc87e6\", color=\"#bb0ec4\""
+			name = aux.Contenido.(*Vertice).Nombre + "\\n" + "(ENTREGA)"
 		} else {
 			extra = ""
+			name = aux.Contenido.(*Vertice).Nombre
 		}
-		nodos += "nodo" + fmt.Sprintf("%p", aux.Contenido.(*Vertice)) + "[shape=oval, label=\"" + aux.Contenido.(*Vertice).Nombre + "\"" + extra + "]\n"
+		newName := strings.Split(name, " ")
+		if len(newName) > 2 {
+			name = newName[0]
+			for i := 1; i < len(newName); i++ {
+				if i%2 == 0 && i > 0 {
+					name += "\\n"
+				}
+				name += " " + newName[i]
+			}
+		}
+		nodos += "nodo" + fmt.Sprintf("%p", aux.Contenido.(*Vertice)) + "[shape=oval, label=\"" + name + "\"" + extra + "]\n"
 		aux2 := aux.Contenido.(*Vertice).Enlaces.First
 		for aux2 != nil {
 			if MovimientoExists(enlaces, aux.Contenido.(*Vertice).Nombre, aux2.Contenido.(*Enlace).Peso, aux2.Contenido.(*Enlace).Destino.Nombre) == nil {
 				conexiones += "nodo" + fmt.Sprintf("%p", aux.Contenido.(*Vertice)) + "--" + "nodo" + fmt.Sprintf("%p", aux2.Contenido.(*Enlace).Destino) +
-					"[label=" + fmt.Sprintf("%.2f", aux2.Contenido.(*Enlace).Peso) + "]\n"
+					"[label=" + fmt.Sprintf("%.2f", aux2.Contenido.(*Enlace).Peso) + ", labeldistance=0]\n"
 				enlaces.InsertarSimple(NewNodo(NewMovimiento(aux.Contenido.(*Vertice), aux2.Contenido.(*Enlace).Peso, aux2.Contenido.(*Enlace).Destino)))
 			}
 			aux2 = aux2.Next

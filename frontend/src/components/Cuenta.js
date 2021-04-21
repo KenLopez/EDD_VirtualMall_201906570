@@ -16,8 +16,11 @@ function Cuenta() {
     let cerrar = () => setOpen(false)
 
     function validar(){
-        if(password === password2 && password!=="" && password2!==""){
+        if(password === password2){
             setOpen(true)
+        }else{
+            setErrOpen(true)
+            setMessage('Las contraseñas no coinciden.')
         }
     }
 
@@ -55,14 +58,14 @@ function Cuenta() {
                     </Header>
                 </Segment>
                 <center>
-                    <Form>
+                    <Form onSubmit={validar}>
                         <Input required type='password' icon='key' iconPosition='left' size="big" placeholder="Contraseña..." onChange={ (e)=>{
                                             setPassword(e.target.value)}}/>
                         <br/><br/>
                         <Input required type='password' icon='key' iconPosition='left' size="big" placeholder="Confirmar Contraseña..." onChange={ (e)=>{
                                             setPassword2(e.target.value)}}/>
                         <br/><br/>
-                        <Button type="submit" color="red" size="big" onClick={validar}>Eliminar Mi Cuenta</Button>
+                        <Button type="submit" color="red" size="big">Eliminar Mi Cuenta</Button>
                     </Form>
                 </center>
             </div>

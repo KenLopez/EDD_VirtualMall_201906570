@@ -46,14 +46,14 @@ function Login() {
                     </Header>
                 </Segment>
                 <center>
-                    <Form>
+                    <Form onSubmit={ingresar}>
                         <Input icon='address card' iconPosition='left' size="big" placeholder="DPI..." onChange={ (e)=>{
                                             setDpi(e.target.value)}}/>
                         <br/><br/>
                         <Input type='password' icon='key' iconPosition='left' size="big" placeholder="Contraseña..." onChange={ (e)=>{
                                             setPassword(e.target.value)}}/>
                         <br/><br/>
-                        <Button type="submit" color="purple" size="big" onClick={ingresar}>Entrar</Button>
+                        <Button type="submit" color="purple" size="big">Entrar</Button>
                     </Form>
                 </center>
             </div>

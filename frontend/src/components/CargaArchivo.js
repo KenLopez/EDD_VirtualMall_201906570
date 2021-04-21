@@ -16,7 +16,7 @@ function CargaArchivo(props) {
             if(Archivo!=null|undefined){
                 setArchivo(null)
                 let res = await axios.post(props.Ruta, Archivo)
-                console.log(res)     
+                //console.log(res)     
             }
         }
         cargar()

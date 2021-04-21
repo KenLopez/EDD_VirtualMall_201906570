@@ -141,7 +141,14 @@ function Tienda() {
                         </Segment>
                         <Message>
                             <Message.Header>Esta tienda no posee inventario</Message.Header>
-                            <p>Puedes cargar inventarios en la sección de Cargar Archivo.</p>
+                            {
+                                localStorage.getItem("LOGED")==="Admin"?(
+                                    <p>Puedes cargar inventarios en la sección de Cargar Archivo.</p>
+                                ):(
+                                    <></>
+                                )
+                            }
+                            
                         </Message>
                     </div>
                 </div>

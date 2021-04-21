@@ -1,5 +1,5 @@
 import {React, useState} from 'react'
-import {Header, Segment, Icon, Container, Grid, Input, Button, Image, Dropdown} from 'semantic-ui-react'
+import {Header, Segment, Icon, Container, Grid, Input, Button, Image, Dropdown, TransitionablePortal, Form} from 'semantic-ui-react'
 import NavBar from './NavBar'
 import '../css/Content.css'
 import { useHistory } from 'react-router'
@@ -18,8 +18,14 @@ function Reporte() {
     const [month, setMonth] = useState('0')
     const [cat, setCat] = useState('')
     const [day, setDay] = useState('')
-    const [cipher, setCipher] = useState('')
+    const [cipher, setCipher] = useState(4)
     const [key, setKey] = useState('')
+    const [mensaje, setMensaje] = useState('')
+    const [errCipher, setErrCipher] = useState('')
+    const [open, setOpen] = useState(false)
+    const [noPedido, setNoPedido] = useState('0')
+    const [tabla, setTabla] = useState([])
+    const [total, setTotal] = useState(0)
     function getMonth(m){
         switch (m) {
             case 'ENERO':
@@ -127,7 +133,29 @@ function Reporte() {
                 setTitle('Árbol Cuentas')
             }
         }
-        obtener()
+        if (cipher<4){
+            obtener()
+        }else{
+            setErrCipher('*Elige una opcion')
+        }
+        setTabla([])
+    }
+
+    const updateKey=()=>{
+        async function obtener(){
+            let res = await axios.post('http://localhost:3000/UpdateKey',{Key:key})
+            if (res.data.Tipo !== "Error"){
+                setOpen(true)
+                setMensaje('Llave Actualizada')
+            }
+        }
+        if (key!==''){
+            obtener()
+        }else{
+            setOpen(true)
+            setMensaje('*La llave no puede estar en blanco')
+        }
+        setTabla([])
     }
 
     const Grafo = ()=>{
@@ -139,6 +167,7 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
     }
 
     const Vector = ()=>{
@@ -150,6 +179,7 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
     }
 
     const arbolA = ()=>{
@@ -161,6 +191,7 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
     }
     const arbolM = ()=>{
         async function obtener(){
@@ -171,6 +202,7 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
     }
     const matriz = ()=>{
         async function obtener(){
@@ -181,6 +213,7 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
     }
     const cola = ()=>{
         async function obtener(){
@@ -191,6 +224,25 @@ function Reporte() {
             }
         }
         obtener()
+        setTabla([])
+    }
+    const robot = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetRobot/'+year+'/'+month+'/'+cat+'/'+day+'/'+(parseInt(noPedido)-1))
+            if (res.data.Tipo !== "Error"){
+                console.log(res.data)
+                setTabla(res.data)
+                let total = 0
+                res.data.forEach(dato => {
+                    console.log(dato.Peso)
+                    total+=parseFloat(dato.Peso) 
+                });
+                setTotal(total)
+                setTitle('Recorrido del Robot')
+            }
+        }
+        obtener()
+        setImagen('')
     }
     return (
         <>
@@ -223,7 +275,9 @@ function Reporte() {
                             <Grid.Column>
                                 <Dropdown placeholder='Tipo...' selection fluid options={cipherOptions} onChange={ (e)=>{
                                     setCipher(getCipher(e.target.innerText))
+                                    setErrCipher('')
                                 }}/>
+                                <p style={{color:'red'}}>{errCipher}</p>
                             </Grid.Column>
                             <Grid.Column>
                                 <center>
@@ -232,16 +286,18 @@ function Reporte() {
                             </Grid.Column>
                             <Grid.Column>
                                 <Input fluid placeholder='Key...' onChange={ (e)=>{
-                                    setCipher(getCipher(e.target.innerText))
+                                    setKey(e.target.value)
+                                    setMensaje('')
                                 }}/>
+                                <p style={{color:'red'}}>{mensaje}</p>
                             </Grid.Column>
                             <Grid.Column>
                                 <center>
-                                    <Button fluid color='teal' >Actualizar Llave</Button>
+                                    <Button fluid color='teal' onClick={updateKey}>Actualizar Llave</Button>
                                 </center>
                             </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row columns={4}>
+                        <Grid.Row columns={5}>
                             <Grid.Column>
                                <Input fluid placeholder='Año...' onChange={ (e)=>{
                                         setYear(e.target.value)
@@ -262,8 +318,13 @@ function Reporte() {
                                         setCat(e.target.value)
                                     }}/>
                             </Grid.Column>
+                            <Grid.Column>
+                               <Input type='number' min='1' fluid placeholder='No. Pedido...'onChange={ (e)=>{
+                                        setNoPedido(e.target.value)
+                                    }}/>
+                            </Grid.Column>
                         </Grid.Row>
-                        <Grid.Row columns={3}>
+                        <Grid.Row columns={4}>
                             <Grid.Column>
                                 <center>
                                     <Button color='teal' onClick={arbolM}>Obtener Árbol<br/>de Meses</Button>
@@ -279,15 +340,81 @@ function Reporte() {
                                     <Button color='teal' onClick={cola}>Obtener Cola<br/>de Pedidos</Button>
                                 </center>
                             </Grid.Column>
+                            <Grid.Column >
+                                <center>
+                                    <Button color='teal' onClick={robot}>Ver Recorrido<br/>del Robot</Button>
+                                </center>
+                            </Grid.Column>
                         </Grid.Row>
                     </Grid>
                 </Container>
-                <Segment>
-                    <Header size="huge">
-                        <Header.Content>{title}</Header.Content>
-                    </Header>
-                </Segment>
-                <Image fluid src={imagen}/>
+                <br/>
+                {
+                    title!==''?(
+                        <>
+                        <Segment>
+                            <Header size="huge">
+                                <Header.Content>{title}</Header.Content>
+                            </Header>
+                        </Segment>
+                        {
+                            imagen!==''?(
+                                <Image fluid src={imagen}/>
+                            ):(
+                                <Segment>
+                                <Grid divided='vertically'>
+                                    <Grid.Row textAlign='center' divided='vertically' columns={4}>
+                                        <Grid.Column>
+                                            <Header size='medium'>No. Movimiento</Header>
+                                        </Grid.Column>
+                                        <Grid.Column>
+                                            <Header size='medium'>Origen</Header>
+                                        </Grid.Column>
+                                        <Grid.Column>
+                                            <Header size='medium'>Destino</Header>
+                                        </Grid.Column>
+                                        <Grid.Column>
+                                            <Header size='medium'>Costo de Viaje (Q)</Header>
+                                        </Grid.Column>
+                                    </Grid.Row>
+                                    <Grid.Row textAlign='center' divided='vertically' columns={4}>
+                                        {tabla.map((c,index)=>
+                                            <>
+                                            <Grid.Column>
+                                                <Header size='small'>{parseInt(index)+1}</Header>
+                                            </Grid.Column>
+                                            <Grid.Column>
+                                                <Header size='small'>{c.Origen}</Header>
+                                            </Grid.Column>
+                                            <Grid.Column>
+                                                <Header size='small'>{c.Destino}</Header>
+                                            </Grid.Column>
+                                            <Grid.Column>
+                                                <Header size='small'>{c.Peso}</Header>
+                                            </Grid.Column>
+                                            </>
+                                        )}
+                                    </Grid.Row>
+                                    <Grid.Row columns={4}>
+                                        <Grid.Column>
+                                            <Header size='medium' textAlign='center'>TOTAL</Header>
+                                        </Grid.Column>
+                                        <Grid.Column></Grid.Column>
+                                        <Grid.Column></Grid.Column>
+                                        <Grid.Column>
+                                            <Header size='medium' textAlign='center'>{total}</Header>
+                                        </Grid.Column>
+                                    </Grid.Row>
+                                </Grid>
+                            </Segment>
+                            )
+                        }
+                        </>
+                    ):(
+                        <></>
+                    )
+                }
+                
             </div>
         </div>
        </> 

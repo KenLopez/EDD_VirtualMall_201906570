@@ -23,7 +23,7 @@ var indices, nombresDep []string
 var vectorDatos []*estructuras.Lista
 var arbolAnios *estructuras.Arbol
 var arbolCuentas *estructuras.ArbolB = estructuras.NewArbolB(5)
-var key int = 132115
+var key string = "132115"
 var grafo *estructuras.Grafo
 
 func inicial(w http.ResponseWriter, r *http.Request) {
@@ -91,9 +91,13 @@ func registro(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &ms)
-	ms.Cuenta = "Cliente"
-	arbolCuentas.Insertar(estructuras.NewKey(ms.Dpi, ms))
-	json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+	if arbolCuentas.Buscar(ms.Dpi) == nil {
+		ms.Cuenta = "Cliente"
+		arbolCuentas.Insertar(estructuras.NewKey(ms.Dpi, ms))
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	}
 }
 
 func cargarUsuarios(w http.ResponseWriter, r *http.Request) {
@@ -137,6 +141,7 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			Nombre:       ms.Pedidos[i].Tienda,
 			Calificacion: ms.Pedidos[i].Calificacion,
 		})
+		destinos := estructuras.NewCola()
 		if nodo == nil {
 			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Pedidos[i].Tienda+"-;")
 		} else if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
@@ -146,12 +151,39 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			for j := 0; j < len(ms.Pedidos[i].Productos); j++ {
 				nodoArbol := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(ms.Pedidos[i].Productos[j].Codigo)
 				if nodoArbol != nil {
-					nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
-					prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
-					//fmt.Println(w, nodoArbol.Contenido.(*estructuras.Producto).Nombre+": "+strconv.Itoa(nodoArbol.Contenido.(*estructuras.Producto).Cantidad))
+					vertice := grafo.VerticeExists(nodoArbol.Contenido.(*estructuras.Producto).Almacenamiento)
+					if vertice != nil {
+						if destinos.Frente == nil {
+							destinos.Queue(vertice)
+						} else {
+							aux := destinos.Frente
+							insertar := true
+							for aux != nil {
+								if aux.Contenido.(*estructuras.Vertice).Nombre == vertice.Nombre {
+									insertar = false
+									break
+								} else if aux.Contenido.(*estructuras.Vertice).Nombre == grafo.Inicio.Nombre {
+									insertar = false
+									break
+								} else if aux.Contenido.(*estructuras.Vertice).Nombre == grafo.Entrega.Nombre {
+									insertar = false
+									break
+								}
+								aux = aux.Next
+							}
+							if insertar {
+								destinos.Queue(vertice)
+							}
+						}
+						nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
+						prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
+					}
 				}
 			}
 			if len(prodOk) != 0 {
+				destinos.Queue(grafo.Entrega)
+				destinos.Queue(grafo.Inicio)
+				go grafo.RecorridoRobot(ms.Pedidos[i], destinos)
 				ms.Pedidos[i].Productos = prodOk
 				if arbolAnios == nil {
 					arbolAnios = estructuras.NewArbol()
@@ -165,14 +197,10 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 				}
 				nodoMes := nodoAnio.Contenido.(*estructuras.Arbol).Buscar(estructuras.GetMes(ms.Pedidos[i].Fecha))
 				nodoMes.Contenido.(*estructuras.Matriz).NuevoPedido(ms.Pedidos[i])
-
 			}
 		}
 	}
-	//arbol := arbolAnios
-	//arbol.Buscar(5)
 	json.NewEncoder(w).Encode("Pedidos Cargados")
-	//json.NewEncoder(w).Encode(ms)
 }
 
 func cargarInventarios(w http.ResponseWriter, r *http.Request) {
@@ -515,6 +543,21 @@ func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func updateKey(w http.ResponseWriter, r *http.Request) {
+	var ms struct {
+		Key string `json:Key`
+	}
+	reqBody, err := ioutil.ReadAll(r.Body)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		json.Unmarshal(reqBody, &ms)
+		key = ms.Key
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: ms.Key})
+	}
+}
+
 func getGrafo(w http.ResponseWriter, r *http.Request) {
 	if grafo == nil {
 		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
@@ -525,10 +568,10 @@ func getGrafo(w http.ResponseWriter, r *http.Request) {
 		path, _ := exec.LookPath("neato")
 		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
 		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
-		/*e := os.Remove("Arbol-Cuentas.dot")
+		e := os.Remove(title + ".dot")
 		if e != nil {
 			log.Fatal(e)
-		}*/
+		}
 		f, _ := os.Open(title + ".png")
 		reader := bufio.NewReader(f)
 		content, _ := ioutil.ReadAll(reader)
@@ -637,6 +680,43 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	}
+}
+
+func getRobot(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	anio, err1 := strconv.Atoi(vars["anio"])
+	mes, err2 := strconv.Atoi(vars["mes"])
+	categoria := vars["categoria"]
+	dia, err4 := strconv.Atoi(vars["dia"])
+	num, err5 := strconv.Atoi(vars["num"])
+	if err1 != nil || err2 != nil || err4 != nil || err5 != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else if arbolAnios == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
+		if arbolM != nil {
+			nodoM := arbolM.Buscar(mes)
+			if nodoM != nil {
+				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
+				if cola != nil {
+					pedido := cola.Get(num)
+					if pedido != nil {
+						arr := pedido.Contenido.(*estructuras.Pedido).CaminoCorto.MovToArray()
+						json.NewEncoder(w).Encode(arr)
+					} else {
+						json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+					}
+				} else {
+					json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+				}
+			} else {
+				json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+			}
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
 	}
 }
 
@@ -778,11 +858,13 @@ func main() {
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
+	router.HandleFunc("/GetRobot/{anio}/{mes}/{categoria}/{dia}/{num}", getRobot).Methods("GET")
 	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("POST")
 	router.HandleFunc("/GetArbolCuentas/{cifrado}", getArbolCuentas).Methods("GET")
 	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
 	router.HandleFunc("/GetGrafo", getGrafo).Methods("GET")
 	router.HandleFunc("/Login", login).Methods("POST")
+	router.HandleFunc("/UpdateKey", updateKey).Methods("POST")
 	router.HandleFunc("/Registro", registro).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},

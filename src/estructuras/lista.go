@@ -91,17 +91,35 @@ func (lista *Lista) InsertarInicio(nuevo *NodoLista) {
 	lista.First = nuevo
 }
 
-func (lista *Lista) InsertarSimple(nuevo *NodoLista) {
-	if lista.First == nil {
-		lista.First = nuevo
-	} else {
+func (lista *Lista) recount() {
+	if lista.First != nil {
 		aux := lista.First
-		for aux.Next != nil {
+		count := 0
+		for aux != nil {
+			count++
 			aux = aux.Next
 		}
-		aux.Next = nuevo
+		lista.Size = count
 	}
-	lista.Size++
+}
+
+func (lista *Lista) InsertarSimple(nuevo *NodoLista) {
+	if nuevo != nil {
+		if lista.First == nil {
+			lista.First = nuevo
+		} else {
+			aux := lista.First
+			for aux.Next != nil {
+				aux = aux.Next
+			}
+			aux.Next = nuevo
+		}
+		if nuevo.Next != nil {
+			lista.recount()
+		} else {
+			lista.Size++
+		}
+	}
 }
 
 func (lista *Lista) InsertarFinal(nuevo *NodoLista) {
@@ -180,6 +198,34 @@ func (lista *Lista) ToArray() *[]*Tienda {
 			array = append(array, aux.Contenido.(*NodoTienda).Tienda)
 			aux = aux.Next
 		}
+	}
+	return &array
+}
+
+func (lista *Lista) MovToArray() *[]struct {
+	Origen  string
+	Peso    float32
+	Destino string
+} {
+	array := make([]struct {
+		Origen  string
+		Peso    float32
+		Destino string
+	}, lista.Size)
+	aux := lista.First
+	i := 0
+	for aux != nil {
+		array[i] = struct {
+			Origen  string
+			Peso    float32
+			Destino string
+		}{
+			Origen:  aux.Contenido.(*Movimiento).Origen.Nombre,
+			Peso:    aux.Contenido.(*Movimiento).Peso,
+			Destino: aux.Contenido.(*Movimiento).Destino.Nombre,
+		}
+		i++
+		aux = aux.Next
 	}
 	return &array
 }

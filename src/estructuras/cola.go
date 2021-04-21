@@ -38,6 +38,19 @@ func (cola *Cola) Dequeue() *NodoLista {
 	return nodo
 }
 
+func (cola *Cola) Get(pos int) *NodoLista {
+	aux := cola.Frente
+	count := 0
+	for aux != nil {
+		if count == pos {
+			return aux
+		}
+		count++
+		aux = aux.Next
+	}
+	return nil
+}
+
 func (cola *Cola) GraficarPedidos(arbol *ArbolB) string {
 	var listas, nodos, conexionesC, conexionesP string
 	var numCluster int = 1

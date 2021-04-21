@@ -1,10 +1,11 @@
 package estructuras
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
 	"fmt"
 	"strconv"
-
-	"github.com/fernet/fernet-go"
 )
 
 type Key struct {
@@ -169,7 +170,20 @@ func buscarB(raiz *NodoB, key int) interface{} {
 	return nil
 }
 
-func (nodo *NodoB) getTag(cifrado int, key int) string {
+func encrypt(mensaje string, keyStr string) []byte {
+	text := []byte(mensaje)
+	key := make([]byte, 32)
+	for i := 0; i < len(keyStr); i++ {
+		key[i] = byte(keyStr[i])
+	}
+	c, _ := aes.NewCipher(key)
+	gcm, _ := cipher.NewGCM(c)
+	nonce := make([]byte, gcm.NonceSize())
+	return gcm.Seal(nonce, nonce, text, nil)
+
+}
+
+func (nodo *NodoB) getTag(cifrado int, key string) string {
 	str := fmt.Sprintf("nodo%p", nodo) + "[label=\""
 	hijos := ""
 	links := ""
@@ -191,22 +205,16 @@ func (nodo *NodoB) getTag(cifrado int, key int) string {
 				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
 				break
 			case 1:
-				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				dpi = string(tok)[10:25]
-				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				correo = string(tok)[10:25]
+				dpi = base64.StdEncoding.EncodeToString(encrypt(strconv.Itoa(nodo.Keys[i].Valor), key))[15:25]
+				correo = base64.StdEncoding.EncodeToString(encrypt(nodo.Keys[i].Dato.(*Usuario).Correo, key)[15:25])
 				nombre = nodo.Keys[i].Dato.(*Usuario).Nombre
 				cuenta = nodo.Keys[i].Dato.(*Usuario).Cuenta
 				break
 			case 2:
-				tok, _ := fernet.EncryptAndSign([]byte(strconv.Itoa(nodo.Keys[i].Valor)), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				dpi = string(tok)[10:25]
-				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Correo), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				correo = string(tok)[10:25]
-				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Nombre), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				nombre = string(tok)[10:25]
-				tok, _ = fernet.EncryptAndSign([]byte(nodo.Keys[i].Dato.(*Usuario).Cuenta), &fernet.Key{byte(nodo.Keys[i].Valor)})
-				cuenta = string(tok)[10:25]
+				dpi = base64.StdEncoding.EncodeToString(encrypt(strconv.Itoa(nodo.Keys[i].Valor), key))[15:25]
+				correo = base64.StdEncoding.EncodeToString(encrypt(nodo.Keys[i].Dato.(*Usuario).Correo, key))[15:25]
+				nombre = base64.StdEncoding.EncodeToString(encrypt(nodo.Keys[i].Dato.(*Usuario).Nombre, key))[15:25]
+				cuenta = base64.StdEncoding.EncodeToString(encrypt(nodo.Keys[i].Dato.(*Usuario).Cuenta, key))[15:25]
 				break
 			}
 			if i == llaves/2 {
@@ -242,7 +250,7 @@ func (nodo *NodoB) getTag(cifrado int, key int) string {
 	return str + hijos + links
 }
 
-func (arbol *ArbolB) Graficar(cifrado int, key int) string {
+func (arbol *ArbolB) Graficar(cifrado int, key string) string {
 	return "digraph G{\nnode [shape=Mrecord, color=purple]\n" + arbol.Raiz.getTag(cifrado, key) + "}"
 }
 

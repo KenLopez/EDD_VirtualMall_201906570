@@ -53,6 +53,7 @@ type Pedido struct {
 	Calificacion int       `json:Calificacion`
 	Productos    []*Codigo `json:Productos`
 	Cliente      int       `json:Cliente`
+	CaminoCorto  *Lista
 }
 
 type Codigo struct {

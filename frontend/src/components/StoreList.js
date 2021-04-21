@@ -60,7 +60,13 @@ function StoreList() {
                     </Segment>
                     <Message>
                             <Message.Header>No existen tiendas cargadas</Message.Header>
-                            <p>Puedes cargar tiendas en la sección de Cargar Archivo.</p>
+                            {
+                                localStorage.getItem("LOGED")==="Admin"?(
+                                    <p>Puedes cargar tiendas en la sección de Cargar Archivo.</p>
+                                ):(
+                                    <></>
+                                )
+                            }
                     </Message>
                     </div>
                 </div>
