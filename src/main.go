@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -21,6 +22,9 @@ import (
 var indices, nombresDep []string
 var vectorDatos []*estructuras.Lista
 var arbolAnios *estructuras.Arbol
+var arbolCuentas *estructuras.ArbolB = estructuras.NewArbolB(5)
+var key string = "132115"
+var grafo *estructuras.Grafo
 
 func inicial(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "A_tus_órdenes,_capitán... :D")
@@ -38,6 +42,91 @@ func cargartienda(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode("Tiendas Cargadas")
 }
 
+func login(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.UserLogin
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo iniciar sesión."})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	cuenta := arbolCuentas.Buscar(ms.Dpi)
+	if cuenta != nil {
+		if string(cuenta.(*estructuras.Usuario).Password) == string(ms.Password) {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: cuenta.(*estructuras.Usuario).Cuenta})
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo iniciar sesión. Credenciales incorrectas."})
+		}
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo iniciar sesión. Credenciales incorrectas."})
+	}
+}
+
+func eliminarCuenta(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.UserLogin
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo iniciar sesión."})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	cuenta := arbolCuentas.Buscar(ms.Dpi)
+	if cuenta != nil {
+		if string(cuenta.(*estructuras.Usuario).Password) == string(ms.Password) {
+			arbolCuentas.Eliminar(ms.Dpi)
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	}
+}
+
+func registro(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.Usuario
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error", Content: "No se pudo registrar."})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	if arbolCuentas.Buscar(ms.Dpi) == nil {
+		ms.Cuenta = "Cliente"
+		arbolCuentas.Insertar(estructuras.NewKey(ms.Dpi, ms))
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	}
+}
+
+func cargarUsuarios(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoUsuarios
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_ :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	for i := 0; i < len(ms.Usuarios); i++ {
+		ms.Usuarios[i].Password = fmt.Sprintf("%x", sha256.Sum256([]byte(ms.Usuarios[i].Password)))
+		arbolCuentas.Insertar(estructuras.NewKey(ms.Usuarios[i].Dpi, ms.Usuarios[i]))
+	}
+	json.NewEncoder(w).Encode("Usuarios Cargados")
+}
+
+func cargarGrafo(w http.ResponseWriter, r *http.Request) {
+	var ms *estructuras.ArchivoGrafo
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		json.NewEncoder(w).Encode("No Jaló :c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &ms)
+	grafo = estructuras.NewGrafo(ms)
+	json.NewEncoder(w).Encode("Grafo Cargado")
+}
+
 func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 	var ms *estructuras.ArchivoPedido
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -52,6 +141,7 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			Nombre:       ms.Pedidos[i].Tienda,
 			Calificacion: ms.Pedidos[i].Calificacion,
 		})
+		destinos := estructuras.NewCola()
 		if nodo == nil {
 			fmt.Fprintln(w, "No_se_encontró_tienda:"+ms.Pedidos[i].Tienda+"-;")
 		} else if nodo.Contenido.(*estructuras.NodoTienda).Inventario == nil {
@@ -61,12 +151,39 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			for j := 0; j < len(ms.Pedidos[i].Productos); j++ {
 				nodoArbol := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(ms.Pedidos[i].Productos[j].Codigo)
 				if nodoArbol != nil {
-					nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
-					prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
-					//fmt.Println(w, nodoArbol.Contenido.(*estructuras.Producto).Nombre+": "+strconv.Itoa(nodoArbol.Contenido.(*estructuras.Producto).Cantidad))
+					vertice := grafo.VerticeExists(nodoArbol.Contenido.(*estructuras.Producto).Almacenamiento)
+					if vertice != nil {
+						if destinos.Frente == nil {
+							destinos.Queue(vertice)
+						} else {
+							aux := destinos.Frente
+							insertar := true
+							for aux != nil {
+								if aux.Contenido.(*estructuras.Vertice).Nombre == vertice.Nombre {
+									insertar = false
+									break
+								} else if aux.Contenido.(*estructuras.Vertice).Nombre == grafo.Inicio.Nombre {
+									insertar = false
+									break
+								} else if aux.Contenido.(*estructuras.Vertice).Nombre == grafo.Entrega.Nombre {
+									insertar = false
+									break
+								}
+								aux = aux.Next
+							}
+							if insertar {
+								destinos.Queue(vertice)
+							}
+						}
+						nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
+						prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
+					}
 				}
 			}
 			if len(prodOk) != 0 {
+				destinos.Queue(grafo.Entrega)
+				destinos.Queue(grafo.Inicio)
+				go grafo.RecorridoRobot(ms.Pedidos[i], destinos)
 				ms.Pedidos[i].Productos = prodOk
 				if arbolAnios == nil {
 					arbolAnios = estructuras.NewArbol()
@@ -80,14 +197,10 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 				}
 				nodoMes := nodoAnio.Contenido.(*estructuras.Arbol).Buscar(estructuras.GetMes(ms.Pedidos[i].Fecha))
 				nodoMes.Contenido.(*estructuras.Matriz).NuevoPedido(ms.Pedidos[i])
-
 			}
 		}
 	}
-	//arbol := arbolAnios
-	//arbol.Buscar(5)
 	json.NewEncoder(w).Encode("Pedidos Cargados")
-	//json.NewEncoder(w).Encode(ms)
 }
 
 func cargarInventarios(w http.ResponseWriter, r *http.Request) {
@@ -128,7 +241,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 		json.NewEncoder(w).Encode(nil)
@@ -138,7 +251,7 @@ func tiendaEspecifica(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func buscarPosicion(request *estructuras.RequestFind) *estructuras.Nodo {
+func buscarPosicion(request *estructuras.RequestFind) *estructuras.NodoLista {
 	indice := string(request.Nombre[0])
 	var fila, columna int
 	for i := 0; i < len(indices); i++ {
@@ -184,7 +297,7 @@ func id(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "No_Encontrado")
 	} else {
 		var lista []*estructuras.Tienda
-		var aux *estructuras.Nodo = vectorDatos[numero].First
+		var aux *estructuras.NodoLista = vectorDatos[numero].First
 		for i := 0; i < vectorDatos[numero].Size; i++ {
 			lista = append(lista, aux.Contenido.(*estructuras.NodoTienda).Tienda)
 			aux = aux.Next
@@ -295,75 +408,83 @@ func guardar(w http.ResponseWriter, r *http.Request) {
 }
 
 func getArreglo(w http.ResponseWriter, r *http.Request) {
-	var listas, posiciones, conexionesV, conexionesL string
-	var countPos, countFila, countColumna, countList, numCluster int
-	posiciones = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
-		"style=invis;\nedge[minlen=0.1, dir=fordware]\n"
-	listas = ""
-	countColumna = 0
-	numCluster = 1
-	for i := 0; i < len(vectorDatos)-1; i++ {
-		conexionesV += "struct" + strconv.Itoa(i) + "->struct" + strconv.Itoa(i+1) +
-			"[arrowhead=box, color=\"#9100d4\"];\n"
-	}
-	conexionesV += "}\n"
-	for countPos < len(vectorDatos) {
-		if countPos == 5*len(indices)+5*len(indices)*countColumna {
-			countColumna++
+	if len(vectorDatos) > 0 {
+		var listas, posiciones, conexionesV, conexionesL string
+		var countPos, countFila, countColumna, countList, numCluster int
+		posiciones = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
+			"style=invis;\nedge[minlen=0.1, dir=fordware]\n"
+		listas = ""
+		countColumna = 0
+		numCluster = 1
+		for i := 0; i < len(vectorDatos)-1; i++ {
+			conexionesV += "struct" + strconv.Itoa(i) + "->struct" + strconv.Itoa(i+1) +
+				"[arrowhead=box, color=\"#9100d4\"];\n"
 		}
-		var calificacion int = 0
-		countFila = 0
-		for i := 0; i < 10; i++ {
-			if countPos == len(vectorDatos)-5 {
-				break
+		conexionesV += "}\n"
+		for countPos < len(vectorDatos) {
+			if countPos == 5*len(indices)+5*len(indices)*countColumna {
+				countColumna++
 			}
-			calificacion++
-			if i == 5 {
-				countFila++
-				calificacion = 1
-			}
-			posiciones += "struct" + strconv.Itoa(countPos+i) + "[shape=Mrecord,color" +
-				"=blue, label=\"" + indices[countFila] + "|" + nombresDep[countColumna] +
-				"|{Pos: " + strconv.Itoa(countPos+i) + "|Calif.: " + strconv.Itoa(calificacion) +
-				"*}\"];\n"
-			if vectorDatos[countPos+i].Size > 0 {
-				var aux *estructuras.Nodo = vectorDatos[countPos+i].First
-				conexionesL += "struct" + strconv.Itoa(countPos+i) + "->nodo" + strconv.Itoa(countList) +
-					"[arrowhead=dot, color=\"#b8002b\"];\n"
-				listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
-				for j := 0; j < vectorDatos[countPos+i].Size; j++ {
-					listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
-						"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.GetDatoString())) + "|" +
-						aux.Contenido.(*estructuras.NodoTienda).Tienda.Nombre + "}|" + aux.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion + "}\"];\n"
-					if j != vectorDatos[countPos+i].Size-1 {
-						aux = aux.Next
-					}
-
-					if j >= 1 {
-						conexionesL += "nodo" + strconv.Itoa(countList-1) + "->" +
-							"nodo" + strconv.Itoa(countList) + "[arrowhead=rvee, color=orange];\n" +
-							"nodo" + strconv.Itoa(countList) + "->" +
-							"nodo" + strconv.Itoa(countList-1) + "[arrowhead=rvee, color=yellow];\n"
-					}
-					countList++
+			var calificacion int = 0
+			countFila = 0
+			for i := 0; i < 10; i++ {
+				if countPos == len(vectorDatos)-5 {
+					break
 				}
-				numCluster++
-				listas += "}\n"
+				calificacion++
+				if i == 5 {
+					countFila++
+					calificacion = 1
+				}
+				posiciones += "struct" + strconv.Itoa(countPos+i) + "[shape=Mrecord,color" +
+					"=blue, label=\"" + indices[countFila] + "|" + nombresDep[countColumna] +
+					"|{Pos: " + strconv.Itoa(countPos+i) + "|Calif.: " + strconv.Itoa(calificacion) +
+					"*}\"];\n"
+				if vectorDatos[countPos+i].Size > 0 {
+					var aux *estructuras.NodoLista = vectorDatos[countPos+i].First
+					conexionesL += "struct" + strconv.Itoa(countPos+i) + "->nodo" + strconv.Itoa(countList) +
+						"[arrowhead=dot, color=\"#b8002b\"];\n"
+					listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis;\nedge[dir=both]\n"
+					for j := 0; j < vectorDatos[countPos+i].Size; j++ {
+						listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
+							"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.GetDatoString())) + "|" +
+							aux.Contenido.(*estructuras.NodoTienda).Tienda.Nombre + "}|" + aux.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion + "}\"];\n"
+						if j != vectorDatos[countPos+i].Size-1 {
+							aux = aux.Next
+						}
+
+						if j >= 1 {
+							conexionesL += "nodo" + strconv.Itoa(countList-1) + "->" +
+								"nodo" + strconv.Itoa(countList) + "[arrowhead=rvee, color=orange];\n" +
+								"nodo" + strconv.Itoa(countList) + "->" +
+								"nodo" + strconv.Itoa(countList-1) + "[arrowhead=rvee, color=yellow];\n"
+						}
+						countList++
+					}
+					numCluster++
+					listas += "}\n"
+				}
 			}
+			countPos += 10
 		}
-		countPos += 10
+		conexionesL += "}"
+		data := []byte(posiciones + conexionesV + listas + conexionesL)
+		_ = ioutil.WriteFile("Grafica.dot", data, 0644)
+		path, _ := exec.LookPath("dot")
+		cmd, _ := exec.Command(path, "-Tpng", "Grafica.dot").Output()
+		_ = ioutil.WriteFile("Grafica.png", cmd, os.FileMode(0777))
+		e := os.Remove("Grafica.dot")
+		if e != nil {
+			log.Fatal(e)
+		}
+		f, _ := os.Open("Grafica.png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+	} else {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	}
-	conexionesL += "}"
-	data := []byte(posiciones + conexionesV + listas + conexionesL)
-	_ = ioutil.WriteFile("Grafica.dot", data, 0644)
-	path, _ := exec.LookPath("dot")
-	cmd, _ := exec.Command(path, "-Tpdf", "Grafica.dot").Output()
-	_ = ioutil.WriteFile("Grafica.pdf", cmd, os.FileMode(0777))
-	e := os.Remove("Grafica.dot")
-	if e != nil {
-		log.Fatal(e)
-	}
-	fmt.Fprintf(w, "Ya_Está_La_Gráfica")
 
 }
 
@@ -389,6 +510,76 @@ func getArbolAnio(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func getArbolCuentas(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	cifrado, err := strconv.Atoi(vars["cifrado"])
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		title := "Arbol-Cuentas"
+		switch cifrado {
+		case 0:
+			title += "-(Original)"
+			break
+		case 1:
+			title += "(Cifrado-Sensible)"
+		case 2:
+			title += "(Cifrado)"
+		}
+		data := []byte(arbolCuentas.Graficar(cifrado, key))
+		_ = ioutil.WriteFile(title+".dot", data, 0644)
+		path, _ := exec.LookPath("dot")
+		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+		e := os.Remove(title + ".dot")
+		if e != nil {
+			log.Fatal(e)
+		}
+		f, _ := os.Open(title + ".png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+	}
+}
+
+func updateKey(w http.ResponseWriter, r *http.Request) {
+	var ms struct {
+		Key string `json:Key`
+	}
+	reqBody, err := ioutil.ReadAll(r.Body)
+	w.Header().Set("Content-Type", "application/json")
+	if err != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		json.Unmarshal(reqBody, &ms)
+		key = ms.Key
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: ms.Key})
+	}
+}
+
+func getGrafo(w http.ResponseWriter, r *http.Request) {
+	if grafo == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		title := "Grafo"
+		data := []byte(grafo.Graficar())
+		_ = ioutil.WriteFile(title+".dot", data, 0644)
+		path, _ := exec.LookPath("neato")
+		cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+		_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+		e := os.Remove(title + ".dot")
+		if e != nil {
+			log.Fatal(e)
+		}
+		f, _ := os.Open(title + ".png")
+		reader := bufio.NewReader(f)
+		content, _ := ioutil.ReadAll(reader)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+	}
+}
+
 func linealizar(ms *estructuras.Archivo) {
 	var vector []*estructuras.Lista
 	var letras []string
@@ -407,7 +598,7 @@ func linealizar(ms *estructuras.Archivo) {
 				vector = append(vector, estructuras.NewLista())
 			}
 			for k := 0; k < len(ms.Datos[j].Departamentos[i].Tiendas); k++ {
-				var nodo *estructuras.Nodo = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
+				var nodo *estructuras.NodoLista = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
 				if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 1 {
 					vector[len(vector)-5].Insertar(nodo)
 				} else if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 2 {
@@ -492,6 +683,43 @@ func getMatriz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func getRobot(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	anio, err1 := strconv.Atoi(vars["anio"])
+	mes, err2 := strconv.Atoi(vars["mes"])
+	categoria := vars["categoria"]
+	dia, err4 := strconv.Atoi(vars["dia"])
+	num, err5 := strconv.Atoi(vars["num"])
+	if err1 != nil || err2 != nil || err4 != nil || err5 != nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else if arbolAnios == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		arbolM := arbolAnios.Buscar(anio).Contenido.(*estructuras.Arbol)
+		if arbolM != nil {
+			nodoM := arbolM.Buscar(mes)
+			if nodoM != nil {
+				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
+				if cola != nil {
+					pedido := cola.Get(num)
+					if pedido != nil {
+						arr := pedido.Contenido.(*estructuras.Pedido).CaminoCorto.MovToArray()
+						json.NewEncoder(w).Encode(arr)
+					} else {
+						json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+					}
+				} else {
+					json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+				}
+			} else {
+				json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+			}
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
+	}
+}
+
 func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	anio, err1 := strconv.Atoi(vars["anio"])
@@ -509,7 +737,7 @@ func getPedidosDia(w http.ResponseWriter, r *http.Request) {
 			if nodoM != nil {
 				cola := nodoM.Contenido.(*estructuras.Matriz).Get(dia, categoria).Dato
 				if cola != nil {
-					data := []byte(cola.GraficarPedidos())
+					data := []byte(cola.GraficarPedidos(arbolCuentas))
 					_ = ioutil.WriteFile("Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot", data, 0644)
 					path, _ := exec.LookPath("dot")
 					cmd, _ := exec.Command(path, "-Tpng", "Pedidos-"+categoria+"-"+strconv.Itoa(dia)+strconv.Itoa(mes)+strconv.Itoa(anio)+".dot").Output()
@@ -544,7 +772,7 @@ func getInventario(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
 		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
 		json.NewEncoder(w).Encode(nil)
@@ -576,9 +804,9 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.Unmarshal(reqBody, &busqueda)
-	var nodo *estructuras.Nodo = buscarPosicion(busqueda)
+	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
-		fmt.Fprintln(w, "No_se_encontró_la_tienda_solicitada")
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
 	} else {
 		if nodo.Contenido.(*estructuras.NodoTienda).Inventario != nil {
 			title := "Inventario-" + busqueda.Departamento + "-" + strings.ReplaceAll(busqueda.Nombre, " ", "_")
@@ -595,23 +823,34 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 			reader := bufio.NewReader(f)
 			content, _ := ioutil.ReadAll(reader)
 			encoded := base64.StdEncoding.EncodeToString(content)
-			json.NewEncoder(w).Encode(encoded)
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
 		} else {
-			fmt.Fprintf(w, "No_Se_Pudo_Graficar")
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 		}
 
 	}
 }
 
 func main() {
+	pred := &estructuras.Usuario{
+		Dpi:      1234567890101,
+		Nombre:   "EDD2021",
+		Correo:   "auxiliar@edd.com",
+		Password: fmt.Sprintf("%x", sha256.Sum256([]byte("1234"))),
+		Cuenta:   "Admin",
+	}
+	arbolCuentas.Insertar(estructuras.NewKey(pred.Dpi, pred))
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
 	router.HandleFunc("/CargarPedidos", cargarPedidos).Methods("POST")
 	router.HandleFunc("/CargarInventarios", cargarInventarios).Methods("POST")
+	router.HandleFunc("/CargarUsuarios", cargarUsuarios).Methods("POST")
+	router.HandleFunc("/CargarGrafo", cargarGrafo).Methods("POST")
 	router.HandleFunc("/TiendaEspecifica", tiendaEspecifica).Methods("GET")
 	router.HandleFunc("/id/{numero}", id).Methods("GET")
 	router.HandleFunc("/Eliminar", eliminar).Methods("DELETE")
+	router.HandleFunc("/EliminarCuenta", eliminarCuenta).Methods("DELETE")
 	router.HandleFunc("/guardar", guardar).Methods("GET")
 	router.HandleFunc("/getTiendas", getTiendas).Methods("GET")
 	router.HandleFunc("/getArreglo", getArreglo).Methods("GET")
@@ -619,11 +858,18 @@ func main() {
 	router.HandleFunc("/GetArbolMeses/{anio}", getArbolMeses).Methods("GET")
 	router.HandleFunc("/GetMatriz/{anio}/{mes}", getMatriz).Methods("GET")
 	router.HandleFunc("/GetPedidosDia/{anio}/{mes}/{categoria}/{dia}", getPedidosDia).Methods("GET")
+	router.HandleFunc("/GetRobot/{anio}/{mes}/{categoria}/{dia}/{num}", getRobot).Methods("GET")
 	router.HandleFunc("/GetArbolInventario", getArbolInventario).Methods("POST")
+	router.HandleFunc("/GetArbolCuentas/{cifrado}", getArbolCuentas).Methods("GET")
 	router.HandleFunc("/GetInventario", getInventario).Methods("POST")
+	router.HandleFunc("/GetGrafo", getGrafo).Methods("GET")
+	router.HandleFunc("/Login", login).Methods("POST")
+	router.HandleFunc("/UpdateKey", updateKey).Methods("POST")
+	router.HandleFunc("/Registro", registro).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,
+		AllowedMethods:   []string{"POST", "GET", "DELETE"},
 	})
 
 	handler := c.Handler(router)

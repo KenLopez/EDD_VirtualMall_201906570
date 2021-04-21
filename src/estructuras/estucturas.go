@@ -5,6 +5,39 @@ import (
 	"strings"
 )
 
+type ArchivoUsuarios struct {
+	Usuarios []*Usuario `json:Usuarios`
+}
+
+type UserLogin struct {
+	Dpi      int
+	Password string
+}
+
+type Usuario struct {
+	Dpi      int    `json:Dpi`
+	Nombre   string `json:Nombre`
+	Correo   string `json:Correo`
+	Password string `json:Password`
+	Cuenta   string `json:Cuenta`
+}
+
+type ArchivoGrafo struct {
+	Nodos                []*NodoGrafo `json:Nodos`
+	PosicionInicialRobot string       `json:PosicionInicialRobot`
+	Entrega              string       `json:Entrega`
+}
+
+type NodoGrafo struct {
+	Nombre  string           `json:Nombre`
+	Enlaces []*EnlaceArchivo `json:Enlace`
+}
+
+type EnlaceArchivo struct {
+	Nombre    string  `json:Nombre`
+	Distancia float32 `json:Distancia`
+}
+
 type ArchivoInventario struct {
 	Inventarios []*Inventario `json:Inventarios`
 }
@@ -19,6 +52,8 @@ type Pedido struct {
 	Departamento string    `json:Departamento`
 	Calificacion int       `json:Calificacion`
 	Productos    []*Codigo `json:Productos`
+	Cliente      int       `json:Cliente`
+	CaminoCorto  *Lista
 }
 
 type Codigo struct {
@@ -38,12 +73,13 @@ type Inventario struct {
 }
 
 type Producto struct {
-	Nombre      string  `json:Nombre`
-	Codigo      int     `json:Codigo`
-	Descripcion string  `json:Descripcion`
-	Precio      float32 `json:Precio`
-	Cantidad    int     `json:Cantidad`
-	Imagen      string  `json:Imagen`
+	Nombre         string  `json:Nombre`
+	Codigo         int     `json:Codigo`
+	Descripcion    string  `json:Descripcion`
+	Precio         float32 `json:Precio`
+	Cantidad       int     `json:Cantidad`
+	Imagen         string  `json:Imagen`
+	Almacenamiento string  `json:Almacenamiento`
 }
 
 type DeleteReq struct {

@@ -3,21 +3,21 @@ import { useHistory } from 'react-router'
 import NavBar from './NavBar'
 import StoreList from './StoreList'
 
-function Home() {
+function TiendasContainer() {
     const history = useHistory()
     if (localStorage.getItem("LOGED") == null){
         history.push("/Login")
-    }else if (localStorage.getItem("LOGED")=="Admin"){
-        history.push("/Reporte")
+    }else if (localStorage.getItem("LOGED")=="Cliente"){
+        history.push("/Home")
     }
     return (
         <div>
             <NavBar
-            activo={0}
+            activo={1}
             />
             <StoreList/>
         </div>
     )
 }
 
-export default Home
+export default TiendasContainer

@@ -3,25 +3,34 @@ import {BrowserRouter as Router, Route, Redirect} from 'react-router-dom'
 import {Segment} from 'semantic-ui-react'
 import Home from './components/Home'
 import Reporte from './components/Reporte'
-import NavBar from './components/NavBar'
 import Tienda from './components/Tienda'
 import CarritoCompra from './components/CarritoCompra'
 import './App.css'
 import ArchivosContainer from './components/ArchivosContainer'
+import Login from './components/Login'
+import Registro from './components/Registro'
+import TiendasContainer from './components/TiendasContainer'
+import Inventario from './components/Inventario'
+import Cuenta from './components/Cuenta'
 
 function App() {
   return (
     <>
       <Router>
-        <NavBar/>
         <Route exact path="/">
-          <Redirect to="/Home" />
+          <Redirect to="/Login" />
         </Route>
+        <Route path="/Login" component={Login}/>
+        <Route path="/Registro" component={Registro}/>
         <Route path="/Home" component={Home}/>
         <Route path="/CargarArchivo" component={ArchivosContainer}/>
         <Route path="/CarritoCompra" component={CarritoCompra}/>
         <Route path="/Reporte" component={Reporte}/>
         <Route exact path="/Tienda/:Departamento/:Nombre/:Calificacion" component={Tienda}/>
+        <Route exact path="/Inventarios/:Departamento/:Nombre/:Calificacion" component={Inventario}/>
+        <Route path="/Inventarios" component={TiendasContainer}/>
+        <Route path="/Cuenta" component={Cuenta}/>
+
         <Segment inverted color='black' className="Footer">
           <center>
             Kenneth Haroldo López López<br/>201906570<br/>USAC 2021

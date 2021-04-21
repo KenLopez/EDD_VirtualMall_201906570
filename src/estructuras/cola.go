@@ -6,7 +6,7 @@ import (
 )
 
 type Cola struct {
-	Frente *Nodo
+	Frente *NodoLista
 }
 
 func NewCola() *Cola {
@@ -14,7 +14,7 @@ func NewCola() *Cola {
 }
 
 func (cola *Cola) Queue(dato interface{}) {
-	nodo := &Nodo{
+	nodo := &NodoLista{
 		Contenido: dato,
 		Next:      nil,
 	}
@@ -29,7 +29,7 @@ func (cola *Cola) Queue(dato interface{}) {
 	}
 }
 
-func (cola *Cola) Dequeue() *Nodo {
+func (cola *Cola) Dequeue() *NodoLista {
 	if cola.Frente == nil {
 		return nil
 	}
@@ -38,10 +38,22 @@ func (cola *Cola) Dequeue() *Nodo {
 	return nodo
 }
 
-func (cola *Cola) GraficarPedidos() string {
+func (cola *Cola) Get(pos int) *NodoLista {
+	aux := cola.Frente
+	count := 0
+	for aux != nil {
+		if count == pos {
+			return aux
+		}
+		count++
+		aux = aux.Next
+	}
+	return nil
+}
+
+func (cola *Cola) GraficarPedidos(arbol *ArbolB) string {
 	var listas, nodos, conexionesC, conexionesP string
-	var numCluster int
-	numCluster = 1
+	var numCluster int = 1
 	nodos = "digraph G{\ncompound=true;\nsubgraph cluster0{" +
 		"style=invis;\nedge[minlen=0.1, dir=fordware]\n"
 	nodos += "inicio[shape=Mrecord,color=blue, label=\"PEDIDOS\\n" + cola.Frente.Contenido.(*Pedido).Fecha + "\\n" + cola.Frente.Contenido.(*Pedido).Departamento + "\"]\n"
@@ -50,7 +62,14 @@ func (cola *Cola) GraficarPedidos() string {
 	listas = ""
 	conexionesP = ""
 	for aux != nil {
-		nodos += fmt.Sprintf("nodo%p", aux) + "[shape=Mrecord, color=blue,label=\"{" + aux.Contenido.(*Pedido).Tienda + "|" + "Calif.: " + strconv.Itoa(aux.Contenido.(*Pedido).Calificacion) + "*}\"]\n"
+		nodos += fmt.Sprintf("nodo%p", aux) + "[shape=Mrecord, color=blue,label=\"{"
+		cliente := arbol.Buscar(aux.Contenido.(*Pedido).Cliente)
+		if cliente != nil {
+			nodos += "{" + strconv.Itoa(cliente.(*Usuario).Dpi) + "|" + cliente.(*Usuario).Nombre + "}"
+		} else {
+			nodos += "Anónimo"
+		}
+		nodos += "|{" + aux.Contenido.(*Pedido).Tienda + "|" + "Calif.: " + strconv.Itoa(aux.Contenido.(*Pedido).Calificacion) + "*}}\"]\n"
 		conexionesP += fmt.Sprintf("nodo%p", aux) + "->" + fmt.Sprintf("nodo%p", aux.Contenido.(*Pedido).Productos[0]) + "[arrowhead=dot, color=\"#b8002b\"]\n"
 		listas += "subgraph cluster" + strconv.Itoa(numCluster) + "{\nstyle=invis\n"
 		numCluster++
