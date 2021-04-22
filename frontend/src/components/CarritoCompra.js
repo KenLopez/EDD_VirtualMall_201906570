@@ -32,7 +32,8 @@ function CarritoCompra() {
                 Tienda: carrito.Nombre,
                 Departamento: carrito.Departamento,
                 Calificacion: parseInt(carrito.Calificacion),
-                Productos: []
+                Productos: [],
+                Cliente: parseInt(localStorage.getItem('LOGUSER'))
             }]}
             carrito.Productos.forEach(producto => {
                 for (let i = 0; i < producto.Cantidad; i++) {
