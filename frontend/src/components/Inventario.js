@@ -9,7 +9,7 @@ function Inventario() {
     const history = useHistory()
     if (localStorage.getItem("LOGED") == null){
         history.push("/Login")
-    }else if (localStorage.getItem("LOGED")=="Cliente"){
+    }else if (localStorage.getItem("LOGED")=="Usuario"){
         history.push("/Home")
     }
     let {Departamento, Nombre, Calificacion} = useParams()

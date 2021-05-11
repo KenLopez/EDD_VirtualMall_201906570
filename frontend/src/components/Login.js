@@ -1,6 +1,6 @@
 import {React, useState} from 'react'
 import { useHistory } from 'react-router'
-import { Button, Confirm, Form, Header, Icon, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
+import { Button, Form, Header, Icon, Input, Segment, TransitionablePortal } from 'semantic-ui-react'
 import NavBar from './NavBar'
 import SHA256 from 'crypto-js/sha256';
 const axios = require('axios').default

@@ -28,7 +28,7 @@ function NavBar(props) {
             option=["Reportes", "Inventarios", "Cargar Archivos", "Cuenta"]
             link = ["/Reporte", "/Inventarios", "/CargarArchivo", "/Cuenta"]
             setLogout(true)
-        }else if (localStorage.getItem("LOGED") == 'Cliente'){
+        }else if (localStorage.getItem("LOGED") == 'Usuario'){
             option=["Home", "Carrito de Compra","Cuenta"]
             link=["/Home", "/CarritoCompra", "/Cuenta"]
             setLogout(true)

@@ -120,6 +120,18 @@ func NewTienda() *Tienda {
 	return &Tienda{"", "", "", 0, ""}
 }
 
+type Comentario struct {
+	Dpi     int    `json:Dpi`
+	Fecha   string `json:Fecha`
+	Hora    string `json:Hora`
+	Mensaje string `json:Mensaje`
+}
+
+type SubComentario struct {
+	Comentario *Comentario
+	Sub        *SubComentario
+}
+
 func GetAscii(cadena string) int {
 	var ascii int
 	for i := 0; i < len(cadena); i++ {

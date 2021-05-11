@@ -28,7 +28,7 @@ function App() {
         <Route path="/Reporte" component={Reporte}/>
         <Route exact path="/Tienda/:Departamento/:Nombre/:Calificacion" component={Tienda}/>
         <Route exact path="/Inventarios/:Departamento/:Nombre/:Calificacion" component={Inventario}/>
-        <Route path="/Inventarios" component={TiendasContainer}/>
+        <Route exact path="/Inventarios" component={TiendasContainer}/>
         <Route path="/Cuenta" component={Cuenta}/>
 
         <Segment inverted color='black' className="Footer">

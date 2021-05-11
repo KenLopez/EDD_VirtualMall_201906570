@@ -839,7 +839,15 @@ func main() {
 		Password: fmt.Sprintf("%x", sha256.Sum256([]byte("1234"))),
 		Cuenta:   "Admin",
 	}
+	pred2 := &estructuras.Usuario{
+		Dpi:      3004966640101,
+		Nombre:   "Kenneth López",
+		Correo:   "khlopez2000@gmail.com",
+		Password: fmt.Sprintf("%x", sha256.Sum256([]byte("1230"))),
+		Cuenta:   "Usuario",
+	}
 	arbolCuentas.Insertar(estructuras.NewKey(pred.Dpi, pred))
+	arbolCuentas.Insertar(estructuras.NewKey(pred2.Dpi, pred2))
 	router := mux.NewRouter()
 	router.HandleFunc("/", inicial).Methods("GET")
 	router.HandleFunc("/cargartienda", cargartienda).Methods("POST")
