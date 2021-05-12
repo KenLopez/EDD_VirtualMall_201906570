@@ -448,7 +448,7 @@ func getArreglo(w http.ResponseWriter, r *http.Request) {
 					for j := 0; j < vectorDatos[countPos+i].Size; j++ {
 						listas += "nodo" + strconv.Itoa(countList) + "[shape=Mrecord, color=" +
 							"\"#00bf0d\",label=\"{{" + strconv.Itoa(estructuras.GetAscii(aux.GetDatoString())) + "|" +
-							aux.Contenido.(*estructuras.NodoTienda).Tienda.Nombre + "}|" + aux.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion + "}\"];\n"
+							aux.Contenido.(*estructuras.NodoTienda).Tienda.Nombre + "}|" + aux.Contenido.(*estructuras.NodoTienda).Tienda.Contacto + "}\"];\n"
 						if j != vectorDatos[countPos+i].Size-1 {
 							aux = aux.Next
 						}
@@ -778,21 +778,49 @@ func getInventario(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(nil)
 	} else {
 		var inventario []*estructuras.Producto
+		var comentarios []*estructuras.Comment
 		if nodo.Contenido.(*estructuras.NodoTienda).Inventario != nil {
 			inventario = nodo.Contenido.(*estructuras.NodoTienda).Inventario.ToArrayProductos()
 		} else {
 			inventario = make([]*estructuras.Producto, 0)
 		}
+		if nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios != nil {
+			comentarios = nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios.ToArray()
+		} else {
+			comentarios = make([]*estructuras.Comment, 0)
+		}
 		res := struct {
 			Descripcion string
 			Contacto    string
 			Productos   []*estructuras.Producto
+			Comentarios []*estructuras.Comment
 		}{
 			Descripcion: nodo.Contenido.(*estructuras.NodoTienda).Tienda.Descripcion,
 			Contacto:    nodo.Contenido.(*estructuras.NodoTienda).Tienda.Contacto,
 			Productos:   inventario,
+			Comentarios: comentarios,
 		}
 		json.NewEncoder(w).Encode(res)
+	}
+}
+
+func newComentario(w http.ResponseWriter, r *http.Request) {
+	var newCom *estructuras.ComentarioTienda
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_:c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &newCom)
+	var nodo *estructuras.NodoLista = buscarPosicion(newCom.Tienda)
+	if nodo == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		if nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios == nil {
+			nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios = estructuras.NewHashTable()
+		}
+		nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios.InsertarSub(newCom.Comentario)
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
 	}
 }
 
@@ -806,7 +834,7 @@ func getArbolInventario(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(reqBody, &busqueda)
 	var nodo *estructuras.NodoLista = buscarPosicion(busqueda)
 	if nodo == nil {
-		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
 	} else {
 		if nodo.Contenido.(*estructuras.NodoTienda).Inventario != nil {
 			title := "Inventario-" + busqueda.Departamento + "-" + strings.ReplaceAll(busqueda.Nombre, " ", "_")
@@ -874,6 +902,7 @@ func main() {
 	router.HandleFunc("/Login", login).Methods("POST")
 	router.HandleFunc("/UpdateKey", updateKey).Methods("POST")
 	router.HandleFunc("/Registro", registro).Methods("POST")
+	router.HandleFunc("/ComentarTienda", newComentario).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,

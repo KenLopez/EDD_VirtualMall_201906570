@@ -1,9 +1,14 @@
 import {React, useState} from 'react'
-import { Card, Image, Header, Grid, Button, Icon} from 'semantic-ui-react'
+import { Card, Image, Header, Grid, Button, Icon, Modal, Form, Comment} from 'semantic-ui-react'
 import "../css/CartaProducto.css"
+import Comentario from './Comentario'
+const axios = require('axios').default
 
 function CartaProducto(props) {
     const [Unidades, setUnidades] = useState(1)
+    const [comments, setComments] = useState([])
+    const [open, setOpen] = useState(false)
+
     const AddCarrito = ()=>{
         var store = JSON.parse(localStorage.getItem('tienda'))
         var pedido = {
@@ -53,12 +58,12 @@ function CartaProducto(props) {
                 datos.push(store)
             }
             localStorage.setItem('carrito',JSON.stringify(datos))
-        }
-        
+        }    
     }
     if (props.Cantidad>0) {
         return (
-            <Card>
+            <>
+            <Card onClick={()=>setOpen(!open)}>
                 <Card.Content extra>
                     <Grid columns={2} relaxed='very' stackable>
                         <Grid.Column>
@@ -100,6 +105,41 @@ function CartaProducto(props) {
                 </Button>
                 </Card.Content>
             </Card>
+            <Modal
+                open={open}
+                onClose={() => setOpen(!open)}
+            >
+                <Modal.Content>
+                <Comment.Group>
+                        <Header as='h3' dividing>
+                        Comentarios
+                        </Header>
+                        {comments.map((c,index)=>
+                            <Comentario
+                            Dpi={c.Comentario.Dpi}
+                            Fecha={c.Comentario.Fecha}
+                            Hora={c.Comentario.Hora}
+                            Mensaje={c.Comentario.Mensaje}
+                            SubComentarios={c.SubComentarios}
+                            //Responder = {responder}
+                            key = {index}
+                            />
+                        )}
+                        <Form reply>
+                        <Form.TextArea 
+                            placeholder='Escribe un comentario...'
+                            style={{minHeight:100, maxHeight:100}} 
+                            onChange={(e)=>{
+                                //setMessage(e.target.value)
+                            }}
+                        />
+                            <Button content='Comentar' labelPosition='right' icon='edit' primary type='submit'/>
+                        </Form>
+                    </Comment.Group>
+                </Modal.Content>
+            </Modal>
+            </>
+            
         )
     }else{
         return(<></>)

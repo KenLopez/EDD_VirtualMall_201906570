@@ -3,6 +3,7 @@ package estructuras
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 type ArchivoUsuarios struct {
@@ -80,6 +81,7 @@ type Producto struct {
 	Cantidad       int     `json:Cantidad`
 	Imagen         string  `json:Imagen`
 	Almacenamiento string  `json:Almacenamiento`
+	Producto       *HashTable
 }
 
 type DeleteReq struct {
@@ -92,6 +94,11 @@ type RequestFind struct {
 	Departamento string `json:Departamento`
 	Nombre       string `json:Nombre`
 	Calificacion int    `json:Calificacion`
+}
+
+type ComentarioTienda struct {
+	Tienda     *RequestFind   `json:Tieda`
+	Comentario *SubComentario `json:Comentario`
 }
 
 type Archivo struct {
@@ -114,22 +121,28 @@ type Tienda struct {
 	Contacto     string `json:Contacto`
 	Calificacion int    `json:Calificacion`
 	Logo         string `json:Logo`
+	Comentarios  *HashTable
 }
 
 func NewTienda() *Tienda {
-	return &Tienda{"", "", "", 0, ""}
+	return &Tienda{"", "", "", 0, "", nil}
+}
+
+type Comment struct {
+	Comentario     *Comentario `json:Comentario`
+	SubComentarios []*Comment  `json:Subcomentarios`
 }
 
 type Comentario struct {
 	Dpi     int    `json:Dpi`
+	Mensaje string `json:Mensaje`
 	Fecha   string `json:Fecha`
 	Hora    string `json:Hora`
-	Mensaje string `json:Mensaje`
 }
 
 type SubComentario struct {
-	Comentario *Comentario
-	Sub        *SubComentario
+	Comentario *Comentario    `json:Comentario`
+	Sub        *SubComentario `json:Sub`
 }
 
 func GetAscii(cadena string) int {
@@ -156,6 +169,54 @@ func GetMes(fecha string) int {
 	a := strings.Split(fecha, "-")[1]
 	b, _ := strconv.Atoi(a)
 	return b
+}
+
+func CurrentDate() string {
+	date := strconv.Itoa(time.Now().Day())
+	switch time.Now().Month() {
+	case time.January:
+		date += "/01/"
+		break
+	case time.February:
+		date += "/02/"
+		break
+	case time.March:
+		date += "/03/"
+		break
+	case time.April:
+		date += "/04/"
+		break
+	case time.May:
+		date += "/05/"
+		break
+	case time.June:
+		date += "/06/"
+		break
+	case time.July:
+		date += "/07/"
+		break
+	case time.August:
+		date += "/08/"
+		break
+	case time.September:
+		date += "/09/"
+		break
+	case time.October:
+		date += "/10/"
+		break
+	case time.November:
+		date += "/11/"
+		break
+	case time.December:
+		date += "/12/"
+	}
+	date += strconv.Itoa(time.Now().Year())
+	return date
+}
+
+func CurrentTime() string {
+	ctime := strconv.Itoa(time.Now().Hour()) + ":" + strconv.Itoa(time.Now().Minute()) + ":" + strconv.Itoa(time.Now().Second())
+	return ctime
 }
 
 func GetMesName(numero int) string {

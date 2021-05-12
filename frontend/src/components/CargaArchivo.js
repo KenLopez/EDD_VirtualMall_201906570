@@ -33,7 +33,7 @@ function CargaArchivo(props) {
                 <Icon name='file code' />
                 Elije un Archivo:
                 </Header><br/>
-                <input className="ui input" id="archivo" type="file" onChange={
+                <input className="ui input" id="archivo" type="file" accept='.json' onChange={
                     (e)=>{
                         if (e.target.files[0]!=null){
                             let reader = new FileReader()

@@ -4,6 +4,7 @@ import {Segment, Header, Icon, Loader, Image, Grid, Rating, Container, Message, 
 import CartaProducto from './CartaProducto'
 import '../css/Content.css'
 import NavBar from './NavBar'
+import Comentario from './Comentario'
 const axios = require('axios').default
 
 function Tienda() {
@@ -13,17 +14,21 @@ function Tienda() {
     }else if (localStorage.getItem("LOGED")=="Admin"){
         history.push("/Reporte")
     }
+
     let {Departamento, Nombre, Calificacion} = useParams()
     const [Datos, setDatos] = useState([])
     const [Descripcion, setDescripcion] = useState('')
     const [Contacto, setContacto] = useState('')
     const [data, setData] = useState('')
     const [req, setreq] = useState(false)
+    const [comments, setComments] = useState([])
+    const [message, setMessage] = useState('')
+
     var info = []
     var tienda = {
         Nombre:Nombre,
         Departamento:Departamento,
-        Calificacion:Calificacion,
+        Calificacion:parseInt(Calificacion),
     }
     localStorage.setItem('tienda', JSON.stringify(tienda))
     useEffect(() => {
@@ -37,15 +42,48 @@ function Tienda() {
                 setDatos(info[0].Productos) 
                 setDescripcion(info[0].Descripcion)
                 setContacto(info[0].Contacto)
-                if (info.length>0) {
-                    let res2 = await axios.post('http://localhost:3000/GetArbolInventario', { Departamento: Departamento, Nombre: Nombre, Calificacion: parseInt(Calificacion,10) })
-                    setData("data:image/png;base64,"+res2.data)   
-                }
-                //setDot(info[1])             
+                setComments(info[0].Comentarios)           
             }
         }
         obtener()
     })
+    const comentar = ()=>{
+        let comment = {
+            Tienda:tienda,
+            Comentario:{
+                Comentario:{
+                    Dpi:parseInt(localStorage.getItem("LOGUSER")),
+                    Mensaje:message
+                },
+                Sub:null
+            }
+        }
+        Array.from(document.querySelectorAll("textarea")).forEach(
+            item => (item.value = "")
+        );
+        async function enviar(){
+            let res = await axios.post('http://localhost:3000/ComentarTienda', comment)
+            console.log(res)
+        }
+        if (message!=='') {
+            setMessage('')
+            setreq(!req)
+            enviar()   
+        }
+        //console.log(comment)
+    }
+    const responder = (comment)=>{
+        let data = {
+            Tienda:tienda,
+            Comentario: comment
+        }
+        async function enviar(){
+            let res = await axios.post('http://localhost:3000/ComentarTienda', data)
+            console.log(res)
+        }
+        setreq(!req)
+        enviar()
+    }
     if (Datos.length>0) {
         return (
             <>
@@ -95,69 +133,26 @@ function Tienda() {
                         <Header as='h3' dividing>
                         Comentarios
                         </Header>
-
-                        <Comment>
-                        <Comment.Avatar src='https://react.semantic-ui.com/images/avatar/small/matt.jpg' />
-                        <Comment.Content>
-                            <Comment.Author as='a'>Matt</Comment.Author>
-                            <Comment.Metadata>
-                            <div>Today at 5:42PM</div>
-                            </Comment.Metadata>
-                            <Comment.Text>How artistic!</Comment.Text>
-                            <Comment.Actions>
-                            <Comment.Action>Reply</Comment.Action>
-                            </Comment.Actions>
-                        </Comment.Content>
-                        </Comment>
-
-                        <Comment>
-                        <Comment.Avatar src='https://react.semantic-ui.com/images/avatar/small/elliot.jpg' />
-                        <Comment.Content>
-                            <Comment.Author as='a'>Elliot Fu</Comment.Author>
-                            <Comment.Metadata>
-                            <div>Yesterday at 12:30AM</div>
-                            </Comment.Metadata>
-                            <Comment.Text>
-                            <p>This has been very useful for my research. Thanks as well!</p>
-                            </Comment.Text>
-                            <Comment.Actions>
-                            <Comment.Action>Reply</Comment.Action>
-                            </Comment.Actions>
-                        </Comment.Content>
-                        <Comment.Group>
-                            <Comment>
-                            <Comment.Avatar src='https://react.semantic-ui.com/images/avatar/small/jenny.jpg' />
-                            <Comment.Content>
-                                <Comment.Author as='a'>Jenny Hess</Comment.Author>
-                                <Comment.Metadata>
-                                <div>Just now</div>
-                                </Comment.Metadata>
-                                <Comment.Text>Elliot you are always so right :)</Comment.Text>
-                                <Comment.Actions>
-                                <Comment.Action>Reply</Comment.Action>
-                                </Comment.Actions>
-                            </Comment.Content>
-                            </Comment>
-                        </Comment.Group>
-                        </Comment>
-
-                        <Comment>
-                        <Comment.Avatar src='https://react.semantic-ui.com/images/avatar/small/joe.jpg' />
-                        <Comment.Content>
-                            <Comment.Author as='a'>Joe Henderson</Comment.Author>
-                            <Comment.Metadata>
-                            <div>5 days ago</div>
-                            </Comment.Metadata>
-                            <Comment.Text>Dude, this is awesome. Thanks so much</Comment.Text>
-                            <Comment.Actions>
-                            <Comment.Action>Reply</Comment.Action>
-                            </Comment.Actions>
-                        </Comment.Content>
-                        </Comment>
-
+                        {comments.map((c,index)=>
+                            <Comentario
+                            Dpi={c.Comentario.Dpi}
+                            Fecha={c.Comentario.Fecha}
+                            Hora={c.Comentario.Hora}
+                            Mensaje={c.Comentario.Mensaje}
+                            SubComentarios={c.SubComentarios}
+                            Responder = {responder}
+                            key = {index}
+                            />
+                        )}
                         <Form reply>
-                        <Form.TextArea />
-                        <Button content='Add Reply' labelPosition='left' icon='edit' primary />
+                        <Form.TextArea 
+                            placeholder='Escribe un comentario...'
+                            style={{minHeight:100, maxHeight:100}} 
+                            onChange={(e)=>{
+                                setMessage(e.target.value)
+                            }}
+                        />
+                        <Button content='Comentar' labelPosition='right' icon='edit' primary type='submit' onClick={comentar}/>
                         </Form>
                     </Comment.Group>
                 </div>
