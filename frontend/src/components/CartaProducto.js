@@ -8,6 +8,80 @@ function CartaProducto(props) {
     const [Unidades, setUnidades] = useState(1)
     const [comments, setComments] = useState([])
     const [open, setOpen] = useState(false)
+    const [message, setMessage] = useState('')
+
+    const tienda = JSON.parse(localStorage.getItem('tienda'))
+
+    const getComments = ()=>{
+        var req ={
+            Nombre: tienda.Nombre,
+            Departamento: tienda.Departamento,
+            Calificacion: tienda.Calificacion,
+            Codigo: parseInt(props.Codigo)
+        }
+        async function obtener(){
+            let res = await axios.post('http://localhost:3000/GetComentarios', req)
+            if (res.data.Tipo != 'Error') {
+                let com = res.data.Comentarios
+                setComments(com)   
+            }
+        }
+        obtener()
+    }
+
+    const comentar = ()=>{
+        let comment = {
+            Tienda:{
+              Nombre: tienda.Nombre,
+              Departamento: tienda.Departamento,  
+              Calificacion: tienda.Calificacion,
+              Codigo: parseInt(props.Codigo)
+            },
+            Comentario:{
+                Comentario:{
+                    Dpi:parseInt(localStorage.getItem("LOGUSER")),
+                    Mensaje:message
+                },
+                Sub:null
+            },
+        }
+        Array.from(document.querySelectorAll("textarea")).forEach(
+            item => (item.value = "")
+        );
+        async function enviar(){
+            let res = await axios.post('http://localhost:3000/ComentarProducto', comment)
+            if (res.data.Tipo != 'Error') {
+                let com = res.data
+                setComments(com)   
+            }
+        }
+        if (message!=='') {
+            setMessage('')
+            enviar()   
+        }
+        //console.log(comment)
+    }
+
+    const responder = (comment)=>{
+        let com = {
+            Tienda:{
+              Nombre: tienda.Nombre,
+              Departamento: tienda.Departamento,  
+              Calificacion: tienda.Calificacion,
+              Codigo: parseInt(props.Codigo)
+            },
+            Comentario:comment
+        }
+        async function enviar(){
+            let res = await axios.post('http://localhost:3000/ComentarProducto', com)
+            if (res.data.Tipo != 'Error') {
+                let com = res.data
+                setComments(com)   
+            }
+        }
+        //setreq(!req)
+        enviar()
+    }
 
     const AddCarrito = ()=>{
         var store = JSON.parse(localStorage.getItem('tienda'))
@@ -63,7 +137,10 @@ function CartaProducto(props) {
     if (props.Cantidad>0) {
         return (
             <>
-            <Card onClick={()=>setOpen(!open)}>
+            <Card onClick={()=>{
+                getComments();
+                setOpen(!open);
+                }}>
                 <Card.Content extra>
                     <Grid columns={2} relaxed='very' stackable>
                         <Grid.Column>
@@ -107,13 +184,18 @@ function CartaProducto(props) {
             </Card>
             <Modal
                 open={open}
-                onClose={() => setOpen(!open)}
+                onClose={() => {
+                    setOpen(!open)
+
+                }}
             >
+                <Modal.Header>
+                    <Header as='h3'>
+                            Comentarios
+                    </Header>
+                </Modal.Header>
                 <Modal.Content>
                 <Comment.Group>
-                        <Header as='h3' dividing>
-                        Comentarios
-                        </Header>
                         {comments.map((c,index)=>
                             <Comentario
                             Dpi={c.Comentario.Dpi}
@@ -121,7 +203,7 @@ function CartaProducto(props) {
                             Hora={c.Comentario.Hora}
                             Mensaje={c.Comentario.Mensaje}
                             SubComentarios={c.SubComentarios}
-                            //Responder = {responder}
+                            Responder = {responder}
                             key = {index}
                             />
                         )}
@@ -130,10 +212,10 @@ function CartaProducto(props) {
                             placeholder='Escribe un comentario...'
                             style={{minHeight:100, maxHeight:100}} 
                             onChange={(e)=>{
-                                //setMessage(e.target.value)
+                                setMessage(e.target.value)
                             }}
                         />
-                            <Button content='Comentar' labelPosition='right' icon='edit' primary type='submit'/>
+                            <Button content='Comentar' labelPosition='right' icon='edit' primary onClick={comentar}/>
                         </Form>
                     </Comment.Group>
                 </Modal.Content>

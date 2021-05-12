@@ -805,7 +805,7 @@ func getInventario(w http.ResponseWriter, r *http.Request) {
 }
 
 func newComentario(w http.ResponseWriter, r *http.Request) {
-	var newCom *estructuras.ComentarioTienda
+	var newCom *estructuras.ReqComentario
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(w, "No_Jaló_:c")
@@ -821,6 +821,66 @@ func newComentario(w http.ResponseWriter, r *http.Request) {
 		}
 		nodo.Contenido.(*estructuras.NodoTienda).Tienda.Comentarios.InsertarSub(newCom.Comentario)
 		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok"})
+	}
+}
+
+func newComentarioProd(w http.ResponseWriter, r *http.Request) {
+	var newCom *estructuras.ReqComentario
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_:c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &newCom)
+	var nodo *estructuras.NodoLista = buscarPosicion(newCom.Tienda)
+	if nodo == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		prod := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(newCom.Tienda.Codigo)
+		if prod != nil {
+			if prod.Contenido.(*estructuras.Producto).Comentarios == nil {
+				prod.Contenido.(*estructuras.Producto).Comentarios = estructuras.NewHashTable()
+			}
+			prod.Contenido.(*estructuras.Producto).Comentarios.InsertarSub(newCom.Comentario)
+			json.NewEncoder(w).Encode(prod.Contenido.(*estructuras.Producto).Comentarios.ToArray())
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
+	}
+}
+
+func getComentariosProd(w http.ResponseWriter, r *http.Request) {
+	var newCom *estructuras.RequestFind
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		fmt.Fprintf(w, "No_Jaló_:c")
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.Unmarshal(reqBody, &newCom)
+	var nodo *estructuras.NodoLista = buscarPosicion(newCom)
+	if nodo == nil {
+		json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+	} else {
+		prod := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(newCom.Codigo)
+		if prod != nil {
+			if prod.Contenido.(*estructuras.Producto).Comentarios != nil {
+				res := struct {
+					Comentarios []*estructuras.Comment
+				}{
+					Comentarios: prod.Contenido.(*estructuras.Producto).Comentarios.ToArray(),
+				}
+				json.NewEncoder(w).Encode(res)
+			} else {
+				res := struct {
+					Comentarios []*estructuras.Comment
+				}{
+					Comentarios: make([]*estructuras.Comment, 0),
+				}
+				json.NewEncoder(w).Encode(res)
+			}
+		} else {
+			json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Error"})
+		}
 	}
 }
 
@@ -903,6 +963,8 @@ func main() {
 	router.HandleFunc("/UpdateKey", updateKey).Methods("POST")
 	router.HandleFunc("/Registro", registro).Methods("POST")
 	router.HandleFunc("/ComentarTienda", newComentario).Methods("POST")
+	router.HandleFunc("/ComentarProducto", newComentarioProd).Methods("POST")
+	router.HandleFunc("/GetComentarios", getComentariosProd).Methods("POST")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,

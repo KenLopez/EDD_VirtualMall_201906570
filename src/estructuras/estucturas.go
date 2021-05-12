@@ -81,7 +81,7 @@ type Producto struct {
 	Cantidad       int     `json:Cantidad`
 	Imagen         string  `json:Imagen`
 	Almacenamiento string  `json:Almacenamiento`
-	Producto       *HashTable
+	Comentarios    *HashTable
 }
 
 type DeleteReq struct {
@@ -94,9 +94,10 @@ type RequestFind struct {
 	Departamento string `json:Departamento`
 	Nombre       string `json:Nombre`
 	Calificacion int    `json:Calificacion`
+	Codigo       int    `json:Codigo`
 }
 
-type ComentarioTienda struct {
+type ReqComentario struct {
 	Tienda     *RequestFind   `json:Tieda`
 	Comentario *SubComentario `json:Comentario`
 }

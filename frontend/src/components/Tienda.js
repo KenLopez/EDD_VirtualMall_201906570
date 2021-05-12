@@ -63,7 +63,6 @@ function Tienda() {
         );
         async function enviar(){
             let res = await axios.post('http://localhost:3000/ComentarTienda', comment)
-            console.log(res)
         }
         if (message!=='') {
             setMessage('')
@@ -152,7 +151,7 @@ function Tienda() {
                                 setMessage(e.target.value)
                             }}
                         />
-                        <Button content='Comentar' labelPosition='right' icon='edit' primary type='submit' onClick={comentar}/>
+                        <Button content='Comentar' labelPosition='right' icon='edit' primary onClick={comentar}/>
                         </Form>
                     </Comment.Group>
                 </div>

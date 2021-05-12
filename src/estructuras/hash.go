@@ -34,7 +34,9 @@ func (tabla *HashTable) ToArray() []*Comment {
 			pos++
 		}
 	}
-	quicksort(&array, 0, len(array)-1)
+	if len(array) > 0 {
+		quicksort(&array, 0, len(array)-1)
+	}
 	return array
 }
 
