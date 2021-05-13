@@ -169,6 +169,7 @@ func (tabla *HashTable) insertar(nuevo int, value *Comentario) {
 			}
 		}
 	}
+	tabla.imprimir()
 }
 
 func (tabla *HashTable) find(key int, value *Comentario) *NodoHash {
@@ -196,7 +197,6 @@ func (tabla *HashTable) InsertarSub(comentario *SubComentario) {
 		comentario.Comentario.Hora = CurrentTime()
 		tabla.insertar(comentario.Comentario.Dpi, comentario.Comentario)
 	}
-	tabla.imprimir()
 }
 
 func (tabla *HashTable) hashing(key int) int {
