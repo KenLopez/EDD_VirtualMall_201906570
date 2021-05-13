@@ -25,6 +25,10 @@ var arbolAnios *estructuras.Arbol
 var arbolCuentas *estructuras.ArbolB = estructuras.NewArbolB(5)
 var key string = "132115"
 var grafo *estructuras.Grafo
+var merkleProductos *estructuras.ArbolMerkle = estructuras.NewArbolMerkle()
+var merkleUsuarios *estructuras.ArbolMerkle = estructuras.NewArbolMerkle()
+var merklePedidos *estructuras.ArbolMerkle = estructuras.NewArbolMerkle()
+var merkleTiendas *estructuras.ArbolMerkle = estructuras.NewArbolMerkle()
 
 func inicial(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "A_tus_órdenes,_capitán... :D")
@@ -111,6 +115,9 @@ func cargarUsuarios(w http.ResponseWriter, r *http.Request) {
 	for i := 0; i < len(ms.Usuarios); i++ {
 		ms.Usuarios[i].Password = fmt.Sprintf("%x", sha256.Sum256([]byte(ms.Usuarios[i].Password)))
 		arbolCuentas.Insertar(estructuras.NewKey(ms.Usuarios[i].Dpi, ms.Usuarios[i]))
+		var cadena strings.Builder
+		fmt.Fprintf(&cadena, "%v,%v,%v,%v,%v", ms.Usuarios[i].Dpi, ms.Usuarios[i].Nombre, ms.Usuarios[i].Correo, ms.Usuarios[i].Cuenta, ms.Usuarios[i].Password)
+		merkleUsuarios.Insertar(cadena.String())
 	}
 	json.NewEncoder(w).Encode("Usuarios Cargados")
 }
@@ -148,6 +155,9 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(w, "La_tienda:"+ms.Pedidos[i].Tienda+" no_posee_inventario-;")
 		} else {
 			var prodOk []*estructuras.Codigo
+			var cadena strings.Builder
+			fmt.Fprintf(&cadena, "%v,%v,%v,%v,%v", ms.Pedidos[i].Fecha, ms.Pedidos[i].Tienda,
+				ms.Pedidos[i].Departamento, ms.Pedidos[i].Calificacion, ms.Pedidos[i].Cliente)
 			for j := 0; j < len(ms.Pedidos[i].Productos); j++ {
 				nodoArbol := nodo.Contenido.(*estructuras.NodoTienda).Inventario.Buscar(ms.Pedidos[i].Productos[j].Codigo)
 				if nodoArbol != nil {
@@ -175,11 +185,13 @@ func cargarPedidos(w http.ResponseWriter, r *http.Request) {
 								destinos.Queue(vertice)
 							}
 						}
+						fmt.Fprintf(&cadena, ",%v", ms.Pedidos[i].Productos[j].Codigo)
 						nodoArbol.Contenido.(*estructuras.Producto).Cantidad--
 						prodOk = append(prodOk, &estructuras.Codigo{Codigo: ms.Pedidos[i].Productos[j].Codigo})
 					}
 				}
 			}
+			merklePedidos.Insertar(cadena.String())
 			if len(prodOk) != 0 {
 				destinos.Queue(grafo.Entrega)
 				destinos.Queue(grafo.Inicio)
@@ -224,6 +236,12 @@ func cargarInventarios(w http.ResponseWriter, r *http.Request) {
 				nodo.Contenido.(*estructuras.NodoTienda).Inventario = estructuras.NewArbol()
 			}
 			for j := 0; j < len(ms.Inventarios[i].Productos); j++ {
+				var cadena strings.Builder
+				fmt.Fprintf(&cadena, "%v,%v,%v,%v,%v,%v,%v,%v,%v,%v", ms.Inventarios[i].Productos[j].Codigo, ms.Inventarios[i].Productos[j].Nombre,
+					ms.Inventarios[i].Productos[j].Descripcion, ms.Inventarios[i].Productos[j].Almacenamiento, ms.Inventarios[i].Productos[j].Precio,
+					ms.Inventarios[i].Productos[j].Imagen, ms.Inventarios[i].Productos[j].Cantidad, ms.Inventarios[i].Tienda, ms.Inventarios[i].Departamento,
+					ms.Inventarios[i].Calificacion)
+				merkleProductos.Insertar(cadena.String())
 				//fmt.Println(ms.Inventarios[i].Productos[j].Nombre)
 				nodo.Contenido.(*estructuras.NodoTienda).Inventario.Insertar(ms.Inventarios[i].Productos[j], ms.Inventarios[i].Productos[j].Codigo)
 			}
@@ -599,6 +617,11 @@ func linealizar(ms *estructuras.Archivo) {
 			}
 			for k := 0; k < len(ms.Datos[j].Departamentos[i].Tiendas); k++ {
 				var nodo *estructuras.NodoLista = estructuras.NewNodo(estructuras.NewNodoTienda(ms.Datos[j].Departamentos[i].Tiendas[k]))
+				var cadena strings.Builder
+				fmt.Fprintf(&cadena, "%v,%v,%v,%v,%v,%v", ms.Datos[j].Departamentos[i].Tiendas[k].Nombre, ms.Datos[j].Departamentos[i].Nombre,
+					ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion, ms.Datos[j].Departamentos[i].Tiendas[k].Contacto,
+					ms.Datos[j].Departamentos[i].Tiendas[k].Descripcion, ms.Datos[j].Departamentos[i].Tiendas[k].Logo)
+				merkleTiendas.Insertar(cadena.String())
 				if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 1 {
 					vector[len(vector)-5].Insertar(nodo)
 				} else if ms.Datos[j].Departamentos[i].Tiendas[k].Calificacion == 2 {
@@ -614,6 +637,78 @@ func linealizar(ms *estructuras.Archivo) {
 		}
 	}
 	vectorDatos = vector
+}
+
+func getMerkleTiendas(w http.ResponseWriter, r *http.Request) {
+	data := []byte(merkleTiendas.Codigo())
+	title := "Arbol-Merkle-Tiendas"
+	_ = ioutil.WriteFile(title+".dot", data, 0644)
+	path, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+	_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+	e := os.Remove(title + ".dot")
+	if e != nil {
+		log.Fatal(e)
+	}
+	f, _ := os.Open(title + ".png")
+	reader := bufio.NewReader(f)
+	content, _ := ioutil.ReadAll(reader)
+	encoded := base64.StdEncoding.EncodeToString(content)
+	json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+}
+
+func getMerklePedidos(w http.ResponseWriter, r *http.Request) {
+	data := []byte(merklePedidos.Codigo())
+	title := "Arbol-Merkle-Pedidos"
+	_ = ioutil.WriteFile(title+".dot", data, 0644)
+	path, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+	_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+	e := os.Remove(title + ".dot")
+	if e != nil {
+		log.Fatal(e)
+	}
+	f, _ := os.Open(title + ".png")
+	reader := bufio.NewReader(f)
+	content, _ := ioutil.ReadAll(reader)
+	encoded := base64.StdEncoding.EncodeToString(content)
+	json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+}
+
+func getMerkleUsuarios(w http.ResponseWriter, r *http.Request) {
+	data := []byte(merkleUsuarios.Codigo())
+	title := "Arbol-Merkle-Usuarios"
+	_ = ioutil.WriteFile(title+".dot", data, 0644)
+	path, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+	_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+	e := os.Remove(title + ".dot")
+	if e != nil {
+		log.Fatal(e)
+	}
+	f, _ := os.Open(title + ".png")
+	reader := bufio.NewReader(f)
+	content, _ := ioutil.ReadAll(reader)
+	encoded := base64.StdEncoding.EncodeToString(content)
+	json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
+}
+
+func getMerkleProductos(w http.ResponseWriter, r *http.Request) {
+	data := []byte(merkleProductos.Codigo())
+	title := "Arbol-Merkle-Productos"
+	_ = ioutil.WriteFile(title+".dot", data, 0644)
+	path, _ := exec.LookPath("dot")
+	cmd, _ := exec.Command(path, "-Tpng", title+".dot").Output()
+	_ = ioutil.WriteFile(title+".png", cmd, os.FileMode(0777))
+	e := os.Remove(title + ".dot")
+	if e != nil {
+		log.Fatal(e)
+	}
+	f, _ := os.Open(title + ".png")
+	reader := bufio.NewReader(f)
+	content, _ := ioutil.ReadAll(reader)
+	encoded := base64.StdEncoding.EncodeToString(content)
+	json.NewEncoder(w).Encode(estructuras.Response{Tipo: "Ok", Content: encoded})
 }
 
 func getArbolMeses(w http.ResponseWriter, r *http.Request) {
@@ -965,6 +1060,10 @@ func main() {
 	router.HandleFunc("/ComentarTienda", newComentario).Methods("POST")
 	router.HandleFunc("/ComentarProducto", newComentarioProd).Methods("POST")
 	router.HandleFunc("/GetComentarios", getComentariosProd).Methods("POST")
+	router.HandleFunc("/GetMerkleUsuarios", getMerkleUsuarios).Methods("GET")
+	router.HandleFunc("/GetMerklePedidos", getMerklePedidos).Methods("GET")
+	router.HandleFunc("/GetMerkleTiendas", getMerkleTiendas).Methods("GET")
+	router.HandleFunc("/GetMerkleProductos", getMerkleProductos).Methods("GET")
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowCredentials: true,

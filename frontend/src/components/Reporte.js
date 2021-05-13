@@ -244,6 +244,54 @@ function Reporte() {
         obtener()
         setImagen('')
     }
+
+    const Musuarios = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetMerkleUsuarios')
+            if (res.data.Tipo !== "Error"){
+                setImagen("data:image/png;base64,"+res.data.Content)
+                setTitle('Árbol Años')
+            }
+        }
+        obtener()
+        setTabla([])
+    }
+
+    const Mproductos = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetMerkleProductos')
+            if (res.data.Tipo !== "Error"){
+                setImagen("data:image/png;base64,"+res.data.Content)
+                setTitle('Árbol Años')
+            }
+        }
+        obtener()
+        setTabla([])
+    }
+
+    const Mpedidos = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetMerklePedidos')
+            if (res.data.Tipo !== "Error"){
+                setImagen("data:image/png;base64,"+res.data.Content)
+                setTitle('Árbol Años')
+            }
+        }
+        obtener()
+        setTabla([])
+    }
+
+    const Mtiendas = ()=>{
+        async function obtener(){
+            let res = await axios.get('http://localhost:3000/GetMerkleTiendas')
+            if (res.data.Tipo !== "Error"){
+                setImagen("data:image/png;base64,"+res.data.Content)
+                setTitle('Árbol Años')
+            }
+        }
+        obtener()
+        setTabla([])
+    }
     return (
         <>
         <NavBar
@@ -269,6 +317,20 @@ function Reporte() {
                             </Grid.Column>
                             <Grid.Column>
                                 <Button color='teal' fluid onClick={Grafo}>Obtener Grafo<br/>Completo</Button>
+                            </Grid.Column>
+                        </Grid.Row>
+                        <Grid.Row columns={4}>
+                            <Grid.Column>
+                                <Button color='teal' fluid onClick={Mtiendas}>Árbol de Merkle<br/>de Tiendas</Button>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Button color='teal' fluid onClick={Mproductos}>Árbol de Merkle<br/>de Productos</Button>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Button color='teal' fluid onClick={Musuarios}>Árbol de Merkle<br/>de Usuarios</Button>
+                            </Grid.Column>
+                            <Grid.Column>
+                                <Button color='teal' fluid onClick={Mpedidos}>Árbol de Merkle<br/>de Pedidos</Button>
                             </Grid.Column>
                         </Grid.Row>
                         <Grid.Row columns={4}>
